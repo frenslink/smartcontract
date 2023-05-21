@@ -1,0 +1,5 @@
+{
+    "solidity.remappings": [
+      "@openzeppelin/=/Users/canhlinh/sources/canhlinh/frens/node_modules/@openzeppelin"
+    ]
+  }
