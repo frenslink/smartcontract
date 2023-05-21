@@ -12,15 +12,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Frens is IERC721Receiver, IERC1155Receiver, Ownable {
     uint256 public senderLockDuration = 60*60*24*7; // 7 days
+    uint256 public chargeFee = 2; // 2 percent
 
     struct deposit {
-        address pubKey;
-        uint256 amount;
-        address tokenAddress;
-        uint8 contractType; 
-        uint256 tokenId;
-        address sender;
-        uint256 depositedAt;
+        address pubKey; // Key to lock the token
+        uint256 amount; // Amount of the token
+        address tokenAddress; // Address of the token. 0x0 for ETH
+        uint8 contractType;  // 0 for eth, 1 for erc20, 2 for erc721, 3 for erc1155
+        uint256 tokenId; // ID of the token if erc721 or erc1155
+        address sender; // Address of the sender
+        uint256 depositedAt; // The timestamp of deposit
     }
 
     deposit[] private deposits;
