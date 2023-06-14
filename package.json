@@ -11,9 +11,14 @@
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@opengsn/provider": "^3.0.0-beta.6",
     "@openzeppelin/contracts": "^4.8.3",
     "@openzeppelin/hardhat-upgrades": "^1.26.0",
     "ethers": "^5.7.2",
     "hardhat": "^2.14.0"
+  },
+  "dependencies": {
+    "@opengsn/cli": "^3.0.0-beta.6",
+    "@poanet/solidity-flattener": "^3.0.9"
   }
 }

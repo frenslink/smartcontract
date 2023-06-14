@@ -1,11 +1,12 @@
 // scripts/deploy.js
+const forwarder = require( '../build/gsn/Forwarder').address
+
 async function main () {
-    // We get the contract to deploy
-    const Box = await ethers.getContractFactory('Box');
-    console.log('Deploying Box...');
-    const box = await Box.deploy();
-    await box.deployed();
-    console.log('Box deployed to:', box.address);
+    const Frens = await ethers.getContractFactory('Frens');
+    console.log('Deploying Frens...');
+    const frens = await Frens.deploy(forwarder);
+    await frens.deployed();
+    console.log('Box deployed to:', frens.address);
   }
   
   main()
