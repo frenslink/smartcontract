@@ -86,7 +86,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             gasLimit = defaultGasLimit;
         }
         uint256 gasPrice = minGasPrice > tx.gasprice? minGasPrice:tx.gasprice;
-        return (gasPrice * gasLimit) + protocolFee;
+        uint256 withdrawFee = (gasPrice * gasLimit);
+        return withdrawFee + protocolFee;
     }
 
     function makeDeposit(
