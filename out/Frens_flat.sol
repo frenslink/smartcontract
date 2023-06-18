@@ -1352,6 +1352,10 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         minGasPrice = tx.gasprice;
     }
 
+    function setTrustedForwarder(address _forwarder) external onlyOwner {
+        _setTrustedForwarder(_forwarder);
+    }
+
     function setLockBlocks(uint256 _lockBlocks) external onlyOwner {
         lockBlocks = _lockBlocks;
     }
@@ -1396,15 +1400,10 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
         // handle deposit types
         if (_contractType == 0) {
-            // check that the amount sent is greater than protocol fee
             _amount = msg.value - fee;
             profit += fee;
-            require(_amount > 0, "NOT ENOUGH ETH");
             // override amount with msg.value
         } else {
-            // adds profit
-            profit += msg.value;
-
             if (_contractType == 1) {
                 // REMINDER: User must approve this contract to spend the tokens before calling this function
                 // Unfortunately there's no way of doing this in just one transaction.
@@ -1454,6 +1453,9 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "Internal transfer"
                 );
             }
+
+            // adds profit
+            profit += msg.value;
         }
 
         // create deposit
