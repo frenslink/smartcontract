@@ -6,3 +6,6 @@ flatten:
 
 deploy:
 	npx hardhat run --network canhlinh scripts/deploy.js
+
+runtest:
+	npx hardhat test

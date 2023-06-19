@@ -204,6 +204,527 @@
         },
         "solcVersion": "0.8.2"
       },
+      "@openzeppelin/contracts/utils/Context.sol:Context": {
+        "src": "@openzeppelin/contracts/utils/Context.sol:16",
+        "inherit": [],
+        "libraries": [],
+        "methods": [],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/utils/Strings.sol:Strings": {
+        "src": "@openzeppelin/contracts/utils/Strings.sol:11",
+        "version": {
+          "withMetadata": "3dd6ec39385b250eb31064bb341db9336dcd9c1b80336e4435799aee49f85dc4",
+          "withoutMetadata": "08d24783a787f8a51dea0c166bb6f91a4f0865e02d03d749f102d332e6ead0ff",
+          "linkedWithoutMetadata": "08d24783a787f8a51dea0c166bb6f91a4f0865e02d03d749f102d332e6ead0ff"
+        },
+        "inherit": [],
+        "libraries": [
+          "@openzeppelin/contracts/utils/math/Math.sol:Math"
+        ],
+        "methods": [],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/utils/cryptography/ECDSA.sol:ECDSA": {
+        "src": "@openzeppelin/contracts/utils/cryptography/ECDSA.sol:14",
+        "version": {
+          "withMetadata": "d5210ff96fb968118b9665f0bff078401e2181b5d60f43842b97ecd81ca01f42",
+          "withoutMetadata": "08d24783a787f8a51dea0c166bb6f91a4f0865e02d03d749f102d332e6ead0ff",
+          "linkedWithoutMetadata": "08d24783a787f8a51dea0c166bb6f91a4f0865e02d03d749f102d332e6ead0ff"
+        },
+        "inherit": [],
+        "libraries": [
+          "@openzeppelin/contracts/utils/Strings.sol:Strings"
+        ],
+        "methods": [],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/utils/introspection/IERC165.sol:IERC165": {
+        "src": "@openzeppelin/contracts/utils/introspection/IERC165.sol:15",
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "supportsInterface(bytes4)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/utils/math/Math.sol:Math": {
+        "src": "@openzeppelin/contracts/utils/math/Math.sol:9",
+        "version": {
+          "withMetadata": "3558960dfa0da48fd4935523c89b8bb342609ba4e52cb79f0b51f58eaf509de8",
+          "withoutMetadata": "08d24783a787f8a51dea0c166bb6f91a4f0865e02d03d749f102d332e6ead0ff",
+          "linkedWithoutMetadata": "08d24783a787f8a51dea0c166bb6f91a4f0865e02d03d749f102d332e6ead0ff"
+        },
+        "inherit": [],
+        "libraries": [],
+        "methods": [],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "contracts/Frens.sol:Frens": {
+        "src": "contracts/Frens.sol:16",
+        "version": {
+          "withMetadata": "f32779ee0c3e9df1d8e9c5a39ef34acda559925f11316880511028bd2d2179e5",
+          "withoutMetadata": "4f508d897060509cebaecd261481787cba14d775d33314769558b9bff4950140",
+          "linkedWithoutMetadata": "4f508d897060509cebaecd261481787cba14d775d33314769558b9bff4950140"
+        },
+        "inherit": [
+          "@openzeppelin/contracts/access/Ownable.sol:Ownable",
+          "@openzeppelin/contracts/utils/Context.sol:Context",
+          "@opengsn/contracts/src/ERC2771Recipient.sol:ERC2771Recipient",
+          "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol:IERC2771Recipient",
+          "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol:IERC1155Receiver",
+          "@openzeppelin/contracts/utils/introspection/IERC165.sol:IERC165",
+          "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol:IERC721Receiver"
+        ],
+        "libraries": [
+          "@openzeppelin/contracts/utils/cryptography/ECDSA.sol:ECDSA"
+        ],
+        "methods": [
+          "(address)",
+          "setTrustedForwarder(address)",
+          "setLockBlocks(uint256)",
+          "setGasLimit(address,uint256)",
+          "setDefaultGasLimit(uint256)",
+          "setProtocolFee(uint256)",
+          "setMinGasPrice(uint256)",
+          "estimateFee(address)",
+          "makeDeposit(address,uint8,uint256,uint256,address)",
+          "onERC721Received(address,address,uint256,bytes)",
+          "onERC1155Received(address,address,uint256,uint256,bytes)",
+          "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)",
+          "withdrawDeposit(uint256,address,bytes32,bytes)",
+          "withdrawSender(uint256)",
+          "withdrawProfit(address payable)",
+          "getDepositCount()",
+          "supportsInterface(bytes4)"
+        ],
+        "linkReferences": [],
+        "errors": [
+          {
+            "kind": "constructor",
+            "contract": "Frens",
+            "src": "contracts/Frens.sol:54"
+          },
+          {
+            "kind": "state-variable-assignment",
+            "name": "lockBlocks",
+            "src": "contracts/Frens.sol:17"
+          },
+          {
+            "kind": "state-variable-assignment",
+            "name": "defaultGasLimit",
+            "src": "contracts/Frens.sol:19"
+          },
+          {
+            "kind": "state-variable-assignment",
+            "name": "protocolFee",
+            "src": "contracts/Frens.sol:20"
+          },
+          {
+            "kind": "state-variable-assignment",
+            "name": "profit",
+            "src": "contracts/Frens.sol:21"
+          },
+          {
+            "kind": "state-variable-assignment",
+            "name": "minGasPrice",
+            "src": "contracts/Frens.sol:22"
+          }
+        ],
+        "layout": {
+          "storage": [
+            {
+              "label": "_trustedForwarder",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_address",
+              "contract": "ERC2771Recipient",
+              "src": "@opengsn/contracts/src/ERC2771Recipient.sol:21"
+            },
+            {
+              "label": "_owner",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_address",
+              "contract": "Ownable",
+              "src": "@openzeppelin/contracts/access/Ownable.sol:21"
+            },
+            {
+              "label": "lockBlocks",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_uint256",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:17"
+            },
+            {
+              "label": "gasLimits",
+              "offset": 0,
+              "slot": "3",
+              "type": "t_mapping(t_address,t_uint256)",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:18"
+            },
+            {
+              "label": "defaultGasLimit",
+              "offset": 0,
+              "slot": "4",
+              "type": "t_uint256",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:19"
+            },
+            {
+              "label": "protocolFee",
+              "offset": 0,
+              "slot": "5",
+              "type": "t_uint256",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:20"
+            },
+            {
+              "label": "profit",
+              "offset": 0,
+              "slot": "6",
+              "type": "t_uint256",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:21"
+            },
+            {
+              "label": "minGasPrice",
+              "offset": 0,
+              "slot": "7",
+              "type": "t_uint256",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:22"
+            },
+            {
+              "label": "deposits",
+              "offset": 0,
+              "slot": "8",
+              "type": "t_array(t_struct(deposit)2102_storage)dyn_storage",
+              "contract": "Frens",
+              "src": "contracts/Frens.sol:35"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            },
+            "t_array(t_struct(deposit)2102_storage)dyn_storage": {
+              "label": "struct Frens.deposit[]",
+              "numberOfBytes": "32"
+            },
+            "t_mapping(t_address,t_uint256)": {
+              "label": "mapping(address => uint256)",
+              "numberOfBytes": "32"
+            },
+            "t_struct(deposit)2102_storage": {
+              "label": "struct Frens.deposit",
+              "members": [
+                {
+                  "label": "pubKey",
+                  "type": "t_address",
+                  "offset": 0,
+                  "slot": "0"
+                },
+                {
+                  "label": "amount",
+                  "type": "t_uint256",
+                  "offset": 0,
+                  "slot": "1"
+                },
+                {
+                  "label": "tokenAddress",
+                  "type": "t_address",
+                  "offset": 0,
+                  "slot": "2"
+                },
+                {
+                  "label": "contractType",
+                  "type": "t_uint8",
+                  "offset": 20,
+                  "slot": "2"
+                },
+                {
+                  "label": "tokenId",
+                  "type": "t_uint256",
+                  "offset": 0,
+                  "slot": "3"
+                },
+                {
+                  "label": "sender",
+                  "type": "t_address",
+                  "offset": 0,
+                  "slot": "4"
+                },
+                {
+                  "label": "depositedAt",
+                  "type": "t_uint256",
+                  "offset": 0,
+                  "slot": "5"
+                }
+              ],
+              "numberOfBytes": "192"
+            },
+            "t_uint256": {
+              "label": "uint256",
+              "numberOfBytes": "32"
+            },
+            "t_uint8": {
+              "label": "uint8",
+              "numberOfBytes": "1"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true
+        },
+        "solcVersion": "0.8.2"
+      }
+    },
+    {
+      "@opengsn/contracts/src/ERC2771Recipient.sol:ERC2771Recipient": {
+        "src": "@opengsn/contracts/src/ERC2771Recipient.sol:16",
+        "inherit": [
+          "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol:IERC2771Recipient"
+        ],
+        "libraries": [],
+        "methods": [
+          "getTrustedForwarder()",
+          "isTrustedForwarder(address)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [
+            {
+              "label": "_trustedForwarder",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_address",
+              "contract": "ERC2771Recipient",
+              "src": "@opengsn/contracts/src/ERC2771Recipient.sol:21"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol:IERC2771Recipient": {
+        "src": "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol:11",
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "isTrustedForwarder(address)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/access/Ownable.sol:Ownable": {
+        "src": "@openzeppelin/contracts/access/Ownable.sol:20",
+        "inherit": [
+          "@openzeppelin/contracts/utils/Context.sol:Context"
+        ],
+        "libraries": [],
+        "methods": [
+          "owner()",
+          "renounceOwnership()",
+          "transferOwnership(address)"
+        ],
+        "linkReferences": [],
+        "errors": [
+          {
+            "kind": "constructor",
+            "contract": "Ownable",
+            "src": "@openzeppelin/contracts/access/Ownable.sol:28"
+          }
+        ],
+        "layout": {
+          "storage": [
+            {
+              "label": "_owner",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_address",
+              "contract": "Ownable",
+              "src": "@openzeppelin/contracts/access/Ownable.sol:21"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/token/ERC1155/IERC1155.sol:IERC1155": {
+        "src": "@openzeppelin/contracts/token/ERC1155/IERC1155.sol:14",
+        "inherit": [
+          "@openzeppelin/contracts/utils/introspection/IERC165.sol:IERC165"
+        ],
+        "libraries": [],
+        "methods": [
+          "balanceOf(address,uint256)",
+          "balanceOfBatch(address[],uint256[])",
+          "setApprovalForAll(address,bool)",
+          "isApprovedForAll(address,address)",
+          "safeTransferFrom(address,address,uint256,uint256,bytes)",
+          "safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol:IERC1155Receiver": {
+        "src": "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol:11",
+        "inherit": [
+          "@openzeppelin/contracts/utils/introspection/IERC165.sol:IERC165"
+        ],
+        "libraries": [],
+        "methods": [
+          "onERC1155Received(address,address,uint256,uint256,bytes)",
+          "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20": {
+        "src": "@openzeppelin/contracts/token/ERC20/IERC20.sol:9",
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "totalSupply()",
+          "balanceOf(address)",
+          "transfer(address,uint256)",
+          "allowance(address,address)",
+          "approve(address,uint256)",
+          "transferFrom(address,address,uint256)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/token/ERC721/IERC721.sol:IERC721": {
+        "src": "@openzeppelin/contracts/token/ERC721/IERC721.sol:11",
+        "inherit": [
+          "@openzeppelin/contracts/utils/introspection/IERC165.sol:IERC165"
+        ],
+        "libraries": [],
+        "methods": [
+          "balanceOf(address)",
+          "ownerOf(uint256)",
+          "safeTransferFrom(address,address,uint256,bytes)",
+          "safeTransferFrom(address,address,uint256)",
+          "transferFrom(address,address,uint256)",
+          "approve(address,uint256)",
+          "setApprovalForAll(address,bool)",
+          "getApproved(uint256)",
+          "isApprovedForAll(address,address)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
+      "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol:IERC721Receiver": {
+        "src": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol:11",
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "onERC721Received(address,address,uint256,bytes)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [],
+          "types": {},
+          "layoutVersion": "1.2",
+          "flat": false
+        },
+        "solcVersion": "0.8.2"
+      },
       "@openzeppelin/contracts/utils/Address.sol:Address": {
         "src": "@openzeppelin/contracts/utils/Address.sol:9",
         "version": {
