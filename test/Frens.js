@@ -4,7 +4,6 @@ const {
   loadFixture,
   time,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { ether } = require("@openzeppelin/gsn-helpers/src/helpers");
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -92,4 +91,63 @@ describe("Frens", function () {
     expect(args[2]).to.equal(sentValue);
     expect(args[3]).to.equal(owner.address);
   });
+
+  it("Should withdraw sucessfully", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    const tokenAddress = "0x0000000000000000000000000000000000000000"
+    const contractType = 0
+    const amount = 0
+    const tokenId = 0
+
+    const fee = await frens.estimateFee(ZERO_ADDRESS);
+    const sentValue = ethers.parseEther("0.0123", "ether")
+    expect(await frens.getDepositCount()).to.equal(0);
+    const [_, sender, receipient] = await ethers.getSigners();
+    await frens.connect(sender)
+
+    const password = "abcxyz"
+    const keys = generateKeysFromString(password)
+
+    const tx = await frens.makeDeposit(tokenAddress, contractType, amount, tokenId, keys.address, {value: sentValue + fee});
+    const rc = await tx.wait()
+    const args = rc.logs[0].args
+    const dIndex = args[0]
+    const beforeWithdrawBalance = await ethers.provider.getBalance(receipient.address)
+    
+    const addressHash = await ethers.solidityPackedKeccak256(["address"], [receipient.address])
+    const addressHashBinary = await ethers.getBytes(addressHash);
+    const addressHashEIP191 = await ethers.hashMessage(addressHashBinary);
+    const signature = await signAddress(addressHashBinary, keys.privateKey);
+    // console.log(addressHash, addressHashBinary, addressHashEIP191, signature)
+
+    const tx1 = await frens.withdrawDeposit(dIndex, receipient.address, addressHashEIP191, signature);
+    const rc1 = await tx1.wait()
+    const args1 = rc1.logs[0].args
+    expect(args1[0]).to.equal(dIndex);
+    expect(args1[1]).to.equal(contractType);
+    expect(args1[2]).to.equal(sentValue);
+    expect(args1[3]).to.equal(receipient.address);
+    const afterWithdrawBalance = await ethers.provider.getBalance(receipient.address)
+    expect(afterWithdrawBalance).to.equal(beforeWithdrawBalance + sentValue)
+  });
 });
+
+async function signAddress(addressHashBinary, privateKey) {
+  // 2. add eth msg prefix, then hash, then sign
+  var signer = new ethers.Wallet(privateKey);
+  var signature = await signer.signMessage(addressHashBinary); // this calls ethers.hashMessage and prefixes the hash
+  return signature;
+}
+
+function generateKeysFromString(string) {
+  /* generates a deterministic key pair from an arbitrary length string */
+  var privateKey = ethers.keccak256(ethers.toUtf8Bytes(string));
+  var wallet = new ethers.Wallet(privateKey);
+  var publicKey = wallet.publicKey;
+
+  return {
+    address: wallet.address,
+    privateKey: privateKey,
+    publicKey: publicKey,
+  };
+}
