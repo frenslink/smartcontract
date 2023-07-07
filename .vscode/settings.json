@@ -1,6 +1,6 @@
 {
     "solidity.remappings": [
-      "@openzeppelin/=/Users/canhlinh/sources/canhlinh/frens/node_modules/@openzeppelin", 
-      "@opengsn/=/Users/canhlinh/sources/canhlinh/frens/node_modules/@opengsn"
+      "@openzeppelin/=/home/kyonguyen/sources/phorenz/smartcontract/node_modules/@openzeppelin", 
+      "@opengsn/=/home/kyonguyen/sources/phorenz/smartcontract/node_modules/@opengsn"
     ]
-  }
+}
