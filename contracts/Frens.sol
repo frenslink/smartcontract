@@ -37,12 +37,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     event DepositEvent(
         uint256 _index,
         uint8 _contractType,
+        address _tokenAddress,
         uint256 _amount,
         address indexed _senderAddress
     );
     event WithdrawEvent(
         uint256 _index,
         uint8 _contractType,
+        address _tokenAddress,
         uint256 _amount,
         address indexed _recipientAddress
     );
@@ -180,6 +182,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         emit DepositEvent(
             deposits.length - 1,
             _contractType,
+            _tokenAddress,
             _amount,
             _msgSender()
         );
@@ -235,6 +238,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         emit DepositEvent(
             deposits.length - 1,
             _contractType,
+            _tokenAddress,
             _amount,
             _operator
         );
@@ -290,7 +294,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         );
 
         // emit the deposit event
-        emit DepositEvent(deposits.length - 1, _contractType, _amount, _from);
+        emit DepositEvent(deposits.length - 1, _contractType, _tokenAddress,  _amount, _from);
 
         // return correct bytes4
         return this.onERC1155Received.selector;
@@ -356,6 +360,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             emit DepositEvent(
                 deposits.length - 1,
                 _contractType,
+                _tokenAddress,
                 _amount,
                 _from
             );
@@ -384,7 +389,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     ) external returns (bool) {
         // check that the deposit exists and that it isn't already withdrawn
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
-        require(deposits[_index].amount > 0, "DEPOSIT ALREADY WITHDRAWN");
+        deposit memory _deposit = deposits[_index];
+        require(_deposit.amount > 0, "DEPOSIT ALREADY WITHDRAWN");
         // check that the recipientAddress hashes to the same value as recipientAddressHash
         require(
             _recipientAddressHash ==
@@ -395,32 +401,32 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         );
         // check that the signer is the same as the one stored in the deposit
         address depositSigner = getSigner(_recipientAddressHash, _signature);
-        require(depositSigner == deposits[_index].pubKey, "WRONG SIGNATURE");
+        require(depositSigner == _deposit.pubKey, "WRONG SIGNATURE");
 
         // Deposit request is valid. Withdraw the deposit to the recipient address.
-        if (deposits[_index].contractType == 0) {
+        if (_deposit.contractType == 0) {
             /// handle eth deposits
-            payable(_recipientAddress).transfer(deposits[_index].amount);
-        } else if (deposits[_index].contractType == 1) {
+            payable(_recipientAddress).transfer(_deposit.amount);
+        } else if (_deposit.contractType == 1) {
             // handle erc20 deposits
-            IERC20 token = IERC20(deposits[_index].tokenAddress);
-            token.transfer(_recipientAddress, deposits[_index].amount);
-        } else if (deposits[_index].contractType == 2) {
+            IERC20 token = IERC20(_deposit.tokenAddress);
+            token.transfer(_recipientAddress, _deposit.amount);
+        } else if (_deposit.contractType == 2) {
             // handle erc721 deposits
-            IERC721 token = IERC721(deposits[_index].tokenAddress);
+            IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
                 address(this),
                 _recipientAddress,
-                deposits[_index].tokenId
+                _deposit.tokenId
             );
-        } else if (deposits[_index].contractType == 3) {
+        } else if (_deposit.contractType == 3) {
             // handle erc1155 deposits
-            IERC1155 token = IERC1155(deposits[_index].tokenAddress);
+            IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
                 _recipientAddress,
-                deposits[_index].tokenId,
-                deposits[_index].amount,
+                _deposit.tokenId,
+                _deposit.amount,
                 ""
             );
         }
@@ -428,8 +434,9 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // emit the withdraw event
         emit WithdrawEvent(
             _index,
-            deposits[_index].contractType,
-            deposits[_index].amount,
+            _deposit.contractType,
+            _deposit.tokenAddress,
+            _deposit.amount,
             _recipientAddress
         );
 
@@ -442,36 +449,37 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     // sender can withdraw deposited assets after some blocks
     function withdrawSender(uint256 _index) external {
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
+        deposit memory _deposit = deposits[_index];
         require(
-            block.number >= deposits[_index].depositedAt + lockBlocks ,
+            block.number >= _deposit.depositedAt + lockBlocks ,
             "SENDER MUST WAIT AFTER SOME BLOCKS TO WITHDRAW"
         );
         require(
-            deposits[_index].sender == _msgSender(),
+            _deposit.sender == _msgSender(),
             "MUST BE SENDER TO WITHDRAW"
         );
 
         // handle eth deposits
-        if (deposits[_index].contractType == 0) {
+        if (_deposit.contractType == 0) {
             // send eth to sender
-            payable(_msgSender()).transfer(deposits[_index].amount);
-        } else if (deposits[_index].contractType == 1) {
-            IERC20 token = IERC20(deposits[_index].tokenAddress);
-            token.transfer(_msgSender(), deposits[_index].amount);
-        } else if (deposits[_index].contractType == 2) {
-            IERC721 token = IERC721(deposits[_index].tokenAddress);
+            payable(_msgSender()).transfer(_deposit.amount);
+        } else if (_deposit.contractType == 1) {
+            IERC20 token = IERC20(_deposit.tokenAddress);
+            token.transfer(_msgSender(), _deposit.amount);
+        } else if (_deposit.contractType == 2) {
+            IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
                 address(this),
                 _msgSender(),
-                deposits[_index].tokenId
+                _deposit.tokenId
             );
-        } else if (deposits[_index].contractType == 3) {
-            IERC1155 token = IERC1155(deposits[_index].tokenAddress);
+        } else if (_deposit.contractType == 3) {
+            IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
                 _msgSender(),
-                deposits[_index].tokenId,
-                deposits[_index].amount,
+                _deposit.tokenId,
+                _deposit.amount,
                 ""
             );
         }
@@ -479,8 +487,9 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // emit the withdraw event
         emit WithdrawEvent(
             _index,
-            deposits[_index].contractType,
-            deposits[_index].amount,
+            _deposit.contractType,
+            _deposit.tokenAddress,
+            _deposit.amount,
             _msgSender()
         );
 
