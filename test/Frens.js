@@ -88,8 +88,9 @@ describe("Frens", function () {
     const args = rc.logs[0].args
     expect(args[0]).to.equal(c-BigInt(1));
     expect(args[1]).to.equal(contractType);
-    expect(args[2]).to.equal(sentValue);
-    expect(args[3]).to.equal(owner.address);
+    expect(args[2]).to.equal(tokenAddress);
+    expect(args[3]).to.equal(sentValue);
+    expect(args[4]).to.equal(owner.address);
   });
 
   it("Should withdraw sucessfully", async function () {
@@ -125,8 +126,9 @@ describe("Frens", function () {
     const args1 = rc1.logs[0].args
     expect(args1[0]).to.equal(dIndex);
     expect(args1[1]).to.equal(contractType);
-    expect(args1[2]).to.equal(sentValue);
-    expect(args1[3]).to.equal(receipient.address);
+    expect(args1[2]).to.equal(tokenAddress);
+    expect(args1[3]).to.equal(sentValue);
+    expect(args1[4]).to.equal(receipient.address);
     const afterWithdrawBalance = await ethers.provider.getBalance(receipient.address)
     expect(afterWithdrawBalance).to.equal(beforeWithdrawBalance + sentValue)
   });

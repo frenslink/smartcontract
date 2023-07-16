@@ -60,12 +60,12 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
-// OpenZeppelin Contracts (last updated v4.8.0) (utils/Strings.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (utils/Strings.sol)
 
 
 
 
-// OpenZeppelin Contracts (last updated v4.8.0) (utils/math/Math.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (utils/math/Math.sol)
 
 
 
@@ -118,11 +118,7 @@ library Math {
      * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv)
      * with further edits by Uniswap Labs also under MIT license.
      */
-    function mulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 denominator
-    ) internal pure returns (uint256 result) {
+    function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {
         unchecked {
             // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
             // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256
@@ -137,11 +133,14 @@ library Math {
 
             // Handle non-overflow cases, 256 by 256 division.
             if (prod1 == 0) {
+                // Solidity will revert if denominator == 0, unlike the div opcode on its own.
+                // The surrounding unchecked block does not change this fact.
+                // See https://docs.soliditylang.org/en/latest/control-structures.html#checked-or-unchecked-arithmetic.
                 return prod0 / denominator;
             }
 
             // Make sure the result is less than 2^256. Also prevents denominator == 0.
-            require(denominator > prod1);
+            require(denominator > prod1, "Math: mulDiv overflow");
 
             ///////////////////////////////////////////////
             // 512 by 256 division.
@@ -203,12 +202,7 @@ library Math {
     /**
      * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
      */
-    function mulDiv(
-        uint256 x,
-        uint256 y,
-        uint256 denominator,
-        Rounding rounding
-    ) internal pure returns (uint256) {
+    function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {
         uint256 result = mulDiv(x, y, denominator);
         if (rounding == Rounding.Up && mulmod(x, y, denominator) > 0) {
             result += 1;
@@ -324,31 +318,31 @@ library Math {
     function log10(uint256 value) internal pure returns (uint256) {
         uint256 result = 0;
         unchecked {
-            if (value >= 10**64) {
-                value /= 10**64;
+            if (value >= 10 ** 64) {
+                value /= 10 ** 64;
                 result += 64;
             }
-            if (value >= 10**32) {
-                value /= 10**32;
+            if (value >= 10 ** 32) {
+                value /= 10 ** 32;
                 result += 32;
             }
-            if (value >= 10**16) {
-                value /= 10**16;
+            if (value >= 10 ** 16) {
+                value /= 10 ** 16;
                 result += 16;
             }
-            if (value >= 10**8) {
-                value /= 10**8;
+            if (value >= 10 ** 8) {
+                value /= 10 ** 8;
                 result += 8;
             }
-            if (value >= 10**4) {
-                value /= 10**4;
+            if (value >= 10 ** 4) {
+                value /= 10 ** 4;
                 result += 4;
             }
-            if (value >= 10**2) {
-                value /= 10**2;
+            if (value >= 10 ** 2) {
+                value /= 10 ** 2;
                 result += 2;
             }
-            if (value >= 10**1) {
+            if (value >= 10 ** 1) {
                 result += 1;
             }
         }
@@ -362,7 +356,7 @@ library Math {
     function log10(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log10(value);
-            return result + (rounding == Rounding.Up && 10**result < value ? 1 : 0);
+            return result + (rounding == Rounding.Up && 10 ** result < value ? 1 : 0);
         }
     }
 
@@ -399,13 +393,57 @@ library Math {
     }
 
     /**
-     * @dev Return the log in base 10, following the selected rounding direction, of a positive value.
+     * @dev Return the log in base 256, following the selected rounding direction, of a positive value.
      * Returns 0 if given 0.
      */
     function log256(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log256(value);
-            return result + (rounding == Rounding.Up && 1 << (result * 8) < value ? 1 : 0);
+            return result + (rounding == Rounding.Up && 1 << (result << 3) < value ? 1 : 0);
+        }
+    }
+}
+
+
+// OpenZeppelin Contracts (last updated v4.8.0) (utils/math/SignedMath.sol)
+
+
+
+/**
+ * @dev Standard signed math utilities missing in the Solidity language.
+ */
+library SignedMath {
+    /**
+     * @dev Returns the largest of two signed numbers.
+     */
+    function max(int256 a, int256 b) internal pure returns (int256) {
+        return a > b ? a : b;
+    }
+
+    /**
+     * @dev Returns the smallest of two signed numbers.
+     */
+    function min(int256 a, int256 b) internal pure returns (int256) {
+        return a < b ? a : b;
+    }
+
+    /**
+     * @dev Returns the average of two signed numbers without overflow.
+     * The result is rounded towards zero.
+     */
+    function average(int256 a, int256 b) internal pure returns (int256) {
+        // Formula from the book "Hacker's Delight"
+        int256 x = (a & b) + ((a ^ b) >> 1);
+        return x + (int256(uint256(x) >> 255) & (a ^ b));
+    }
+
+    /**
+     * @dev Returns the absolute unsigned value of a signed value.
+     */
+    function abs(int256 n) internal pure returns (uint256) {
+        unchecked {
+            // must be unchecked in order to support `n = type(int256).min`
+            return uint256(n >= 0 ? n : -n);
         }
     }
 }
@@ -444,6 +482,13 @@ library Strings {
     }
 
     /**
+     * @dev Converts a `int256` to its ASCII `string` decimal representation.
+     */
+    function toString(int256 value) internal pure returns (string memory) {
+        return string(abi.encodePacked(value < 0 ? "-" : "", toString(SignedMath.abs(value))));
+    }
+
+    /**
      * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.
      */
     function toHexString(uint256 value) internal pure returns (string memory) {
@@ -473,12 +518,19 @@ library Strings {
     function toHexString(address addr) internal pure returns (string memory) {
         return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
     }
+
+    /**
+     * @dev Returns true if the two strings are equal.
+     */
+    function equal(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
 }
 
 
 
 
-// OpenZeppelin Contracts (last updated v4.8.0) (utils/cryptography/ECDSA.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (utils/cryptography/ECDSA.sol)
 
 
 
@@ -577,11 +629,7 @@ library ECDSA {
      *
      * _Available since v4.3._
      */
-    function tryRecover(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 vs
-    ) internal pure returns (address, RecoverError) {
+    function tryRecover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address, RecoverError) {
         bytes32 s = vs & bytes32(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
         uint8 v = uint8((uint256(vs) >> 255) + 27);
         return tryRecover(hash, v, r, s);
@@ -592,11 +640,7 @@ library ECDSA {
      *
      * _Available since v4.2._
      */
-    function recover(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 vs
-    ) internal pure returns (address) {
+    function recover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address) {
         (address recovered, RecoverError error) = tryRecover(hash, r, vs);
         _throwError(error);
         return recovered;
@@ -608,12 +652,7 @@ library ECDSA {
      *
      * _Available since v4.3._
      */
-    function tryRecover(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address, RecoverError) {
+    function tryRecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address, RecoverError) {
         // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
         // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
         // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}. Most
@@ -640,12 +679,7 @@ library ECDSA {
      * @dev Overload of {ECDSA-recover} that receives the `v`,
      * `r` and `s` signature fields separately.
      */
-    function recover(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address) {
+    function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address) {
         (address recovered, RecoverError error) = tryRecover(hash, v, r, s);
         _throwError(error);
         return recovered;
@@ -659,10 +693,15 @@ library ECDSA {
      *
      * See {recover}.
      */
-    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
+    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32 message) {
         // 32 is the length in bytes of hash,
         // enforced by the type signature above
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(0x00, "\x19Ethereum Signed Message:\n32")
+            mstore(0x1c, hash)
+            message := keccak256(0x00, 0x3c)
+        }
     }
 
     /**
@@ -686,13 +725,30 @@ library ECDSA {
      *
      * See {recover}.
      */
-    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 data) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, "\x19\x01")
+            mstore(add(ptr, 0x02), domainSeparator)
+            mstore(add(ptr, 0x22), structHash)
+            data := keccak256(ptr, 0x42)
+        }
+    }
+
+    /**
+     * @dev Returns an Ethereum Signed Data with intended validator, created from a
+     * `validator` and `data` according to the version 0 of EIP-191.
+     *
+     * See {recover}.
+     */
+    function toDataWithIntendedValidatorHash(address validator, bytes memory data) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x00", validator, data));
     }
 }
 
 
-// OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
 
 
 
@@ -767,15 +823,11 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
 
-// OpenZeppelin Contracts (last updated v4.8.0) (token/ERC721/IERC721.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC721/IERC721.sol)
 
 
 
@@ -827,12 +879,7 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes calldata data
-    ) external;
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
 
     /**
      * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
@@ -848,11 +895,7 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) external;
+    function safeTransferFrom(address from, address to, uint256 tokenId) external;
 
     /**
      * @dev Transfers `tokenId` token from `from` to `to`.
@@ -870,11 +913,7 @@ interface IERC721 is IERC165 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) external;
+    function transferFrom(address from, address to, uint256 tokenId) external;
 
     /**
      * @dev Gives permission to `to` to transfer `tokenId` token to another account.
@@ -901,7 +940,7 @@ interface IERC721 is IERC165 {
      *
      * Emits an {ApprovalForAll} event.
      */
-    function setApprovalForAll(address operator, bool _approved) external;
+    function setApprovalForAll(address operator, bool approved) external;
 
     /**
      * @dev Returns the account approved for `tokenId` token.
@@ -949,7 +988,7 @@ interface IERC721Receiver {
 }
 
 
-// OpenZeppelin Contracts (last updated v4.7.0) (token/ERC1155/IERC1155.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC1155/IERC1155.sol)
 
 
 
@@ -1010,10 +1049,10 @@ interface IERC1155 is IERC165 {
      *
      * - `accounts` and `ids` must have the same length.
      */
-    function balanceOfBatch(address[] calldata accounts, uint256[] calldata ids)
-        external
-        view
-        returns (uint256[] memory);
+    function balanceOfBatch(
+        address[] calldata accounts,
+        uint256[] calldata ids
+    ) external view returns (uint256[] memory);
 
     /**
      * @dev Grants or revokes permission to `operator` to transfer the caller's tokens, according to `approved`,
@@ -1046,13 +1085,7 @@ interface IERC1155 is IERC165 {
      * - If `to` refers to a smart contract, it must implement {IERC1155Receiver-onERC1155Received} and return the
      * acceptance magic value.
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes calldata data
-    ) external;
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes calldata data) external;
 
     /**
      * @dev xref:ROOT:erc1155.adoc#batch-operations[Batched] version of {safeTransferFrom}.
@@ -1134,7 +1167,7 @@ interface IERC1155Receiver is IERC165 {
 }
 
 
-// OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
+// OpenZeppelin Contracts (last updated v4.9.0) (access/Ownable.sol)
 
 
 
@@ -1212,10 +1245,10 @@ abstract contract Ownable is Context {
 
     /**
      * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     * `onlyOwner` functions. Can only be called by the current owner.
      *
      * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
+     * thereby disabling any functionality that is only available to the owner.
      */
     function renounceOwnership() public virtual onlyOwner {
         _transferOwnership(address(0));
@@ -1333,12 +1366,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     event DepositEvent(
         uint256 _index,
         uint8 _contractType,
+        address _tokenAddress,
         uint256 _amount,
         address indexed _senderAddress
     );
     event WithdrawEvent(
         uint256 _index,
         uint8 _contractType,
+        address _tokenAddress,
         uint256 _amount,
         address indexed _recipientAddress
     );
@@ -1382,7 +1417,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             gasLimit = defaultGasLimit;
         }
         uint256 gasPrice = minGasPrice > tx.gasprice? minGasPrice:tx.gasprice;
-        return (gasPrice * gasLimit) + protocolFee;
+        uint256 withdrawFee = (gasPrice * gasLimit);
+        return withdrawFee + protocolFee;
     }
 
     function makeDeposit(
@@ -1475,6 +1511,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         emit DepositEvent(
             deposits.length - 1,
             _contractType,
+            _tokenAddress,
             _amount,
             _msgSender()
         );
@@ -1530,6 +1567,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         emit DepositEvent(
             deposits.length - 1,
             _contractType,
+            _tokenAddress,
             _amount,
             _operator
         );
@@ -1585,7 +1623,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         );
 
         // emit the deposit event
-        emit DepositEvent(deposits.length - 1, _contractType, _amount, _from);
+        emit DepositEvent(deposits.length - 1, _contractType, _tokenAddress,  _amount, _from);
 
         // return correct bytes4
         return this.onERC1155Received.selector;
@@ -1651,6 +1689,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             emit DepositEvent(
                 deposits.length - 1,
                 _contractType,
+                _tokenAddress,
                 _amount,
                 _from
             );
@@ -1679,7 +1718,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     ) external returns (bool) {
         // check that the deposit exists and that it isn't already withdrawn
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
-        require(deposits[_index].amount > 0, "DEPOSIT ALREADY WITHDRAWN");
+        deposit memory _deposit = deposits[_index];
+        require(_deposit.amount > 0, "DEPOSIT ALREADY WITHDRAWN");
         // check that the recipientAddress hashes to the same value as recipientAddressHash
         require(
             _recipientAddressHash ==
@@ -1690,32 +1730,32 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         );
         // check that the signer is the same as the one stored in the deposit
         address depositSigner = getSigner(_recipientAddressHash, _signature);
-        require(depositSigner == deposits[_index].pubKey, "WRONG SIGNATURE");
+        require(depositSigner == _deposit.pubKey, "WRONG SIGNATURE");
 
         // Deposit request is valid. Withdraw the deposit to the recipient address.
-        if (deposits[_index].contractType == 0) {
+        if (_deposit.contractType == 0) {
             /// handle eth deposits
-            payable(_recipientAddress).transfer(deposits[_index].amount);
-        } else if (deposits[_index].contractType == 1) {
+            payable(_recipientAddress).transfer(_deposit.amount);
+        } else if (_deposit.contractType == 1) {
             // handle erc20 deposits
-            IERC20 token = IERC20(deposits[_index].tokenAddress);
-            token.transfer(_recipientAddress, deposits[_index].amount);
-        } else if (deposits[_index].contractType == 2) {
+            IERC20 token = IERC20(_deposit.tokenAddress);
+            token.transfer(_recipientAddress, _deposit.amount);
+        } else if (_deposit.contractType == 2) {
             // handle erc721 deposits
-            IERC721 token = IERC721(deposits[_index].tokenAddress);
+            IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
                 address(this),
                 _recipientAddress,
-                deposits[_index].tokenId
+                _deposit.tokenId
             );
-        } else if (deposits[_index].contractType == 3) {
+        } else if (_deposit.contractType == 3) {
             // handle erc1155 deposits
-            IERC1155 token = IERC1155(deposits[_index].tokenAddress);
+            IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
                 _recipientAddress,
-                deposits[_index].tokenId,
-                deposits[_index].amount,
+                _deposit.tokenId,
+                _deposit.amount,
                 ""
             );
         }
@@ -1723,8 +1763,9 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // emit the withdraw event
         emit WithdrawEvent(
             _index,
-            deposits[_index].contractType,
-            deposits[_index].amount,
+            _deposit.contractType,
+            _deposit.tokenAddress,
+            _deposit.amount,
             _recipientAddress
         );
 
@@ -1737,36 +1778,37 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     // sender can withdraw deposited assets after some blocks
     function withdrawSender(uint256 _index) external {
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
+        deposit memory _deposit = deposits[_index];
         require(
-            block.number >= deposits[_index].depositedAt + lockBlocks ,
+            block.number >= _deposit.depositedAt + lockBlocks ,
             "SENDER MUST WAIT AFTER SOME BLOCKS TO WITHDRAW"
         );
         require(
-            deposits[_index].sender == _msgSender(),
+            _deposit.sender == _msgSender(),
             "MUST BE SENDER TO WITHDRAW"
         );
 
         // handle eth deposits
-        if (deposits[_index].contractType == 0) {
+        if (_deposit.contractType == 0) {
             // send eth to sender
-            payable(_msgSender()).transfer(deposits[_index].amount);
-        } else if (deposits[_index].contractType == 1) {
-            IERC20 token = IERC20(deposits[_index].tokenAddress);
-            token.transfer(_msgSender(), deposits[_index].amount);
-        } else if (deposits[_index].contractType == 2) {
-            IERC721 token = IERC721(deposits[_index].tokenAddress);
+            payable(_msgSender()).transfer(_deposit.amount);
+        } else if (_deposit.contractType == 1) {
+            IERC20 token = IERC20(_deposit.tokenAddress);
+            token.transfer(_msgSender(), _deposit.amount);
+        } else if (_deposit.contractType == 2) {
+            IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
                 address(this),
                 _msgSender(),
-                deposits[_index].tokenId
+                _deposit.tokenId
             );
-        } else if (deposits[_index].contractType == 3) {
-            IERC1155 token = IERC1155(deposits[_index].tokenAddress);
+        } else if (_deposit.contractType == 3) {
+            IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
                 _msgSender(),
-                deposits[_index].tokenId,
-                deposits[_index].amount,
+                _deposit.tokenId,
+                _deposit.amount,
                 ""
             );
         }
@@ -1774,8 +1816,9 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // emit the withdraw event
         emit WithdrawEvent(
             _index,
-            deposits[_index].contractType,
-            deposits[_index].amount,
+            _deposit.contractType,
+            _deposit.tokenAddress,
+            _deposit.amount,
             _msgSender()
         );
 
