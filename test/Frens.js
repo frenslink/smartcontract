@@ -122,7 +122,7 @@ describe("Frens", function () {
     // console.log(addressHash, addressHashBinary, addressHashEIP191, signature)
 
     const tx1 = await frens.withdrawDeposit(dIndex, receipient.address, addressHashEIP191, signature);
-    const rc1 = await tx1.wait()
+    const rc1 = await tx1.wait(1)
     const args1 = rc1.logs[0].args
     expect(args1[0]).to.equal(dIndex);
     expect(args1[1]).to.equal(contractType);

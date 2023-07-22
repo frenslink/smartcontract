@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/canhlinh/sources/phorenz/smartcontract/contracts/Frens.sol": {
-      "lastModificationDate": 1689493135642,
-      "contentHash": "06e723070c05006a40af735a718a9511",
+      "lastModificationDate": 1690048398140,
+      "contentHash": "120ee9a1f2e0df87ca4509078da533a8",
       "sourceName": "contracts/Frens.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -661,8 +661,8 @@
         "PullPayment"
       ]
     },
-    "/home/kyonguyen/sources/phorenz/smartcontract/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
-      "lastModificationDate": 1688366875209,
+    "/Users/canhlinh/sources/phorenz/smartcontract/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+      "lastModificationDate": 1689492983471,
       "contentHash": "909ab67fc5c25033fe6cd364f8c056f9",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
       "solcConfig": {
@@ -698,8 +698,8 @@
         "IERC20Metadata"
       ]
     },
-    "/home/kyonguyen/sources/phorenz/smartcontract/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
-      "lastModificationDate": 1688366875199,
+    "/Users/canhlinh/sources/phorenz/smartcontract/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
+      "lastModificationDate": 1689492983385,
       "contentHash": "3ae5166c6827a9cf1a7a462d1632b464",
       "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
       "solcConfig": {
@@ -737,9 +737,46 @@
         "ERC20"
       ]
     },
-    "/home/kyonguyen/sources/phorenz/smartcontract/contracts/tokens/usdc.sol": {
-      "lastModificationDate": 1688699101365,
-      "contentHash": "23444273b2fe3879eba12dfcb5bd308f",
+    "/Users/canhlinh/sources/phorenz/smartcontract/contracts/tokens/usdt.sol": {
+      "lastModificationDate": 1690031076667,
+      "contentHash": "ac5633c4bdc0a76afddac463f53ac181",
+      "sourceName": "contracts/tokens/usdt.sol",
+      "solcConfig": {
+        "version": "0.8.2",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.2"
+      ],
+      "artifacts": [
+        "USDT"
+      ]
+    },
+    "/Users/canhlinh/sources/phorenz/smartcontract/contracts/tokens/usdc.sol": {
+      "lastModificationDate": 1690031131327,
+      "contentHash": "2708a07bf7e11cda1f2b314a50f4417f",
       "sourceName": "contracts/tokens/usdc.sol",
       "solcConfig": {
         "version": "0.8.2",
@@ -771,7 +808,7 @@
         "^0.8.2"
       ],
       "artifacts": [
-        "MyToken"
+        "USDC"
       ]
     }
   }

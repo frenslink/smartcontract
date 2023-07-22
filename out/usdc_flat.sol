@@ -500,7 +500,11 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
 
 contract USDC is ERC20 {
     constructor() ERC20("USDC", "USDC") {
-        _mint(msg.sender, 1000000000 * 10 ** uint(decimals()));
+        _mint(msg.sender, 1000000 * 10 ** uint(decimals()));
+    }
+
+    function decimals() public pure override returns (uint8) {
+        return 18;
     }
 }
 

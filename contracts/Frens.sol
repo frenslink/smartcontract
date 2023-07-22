@@ -32,7 +32,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 depositedAt; // The block of deposit
     }
 
-    deposit[] private deposits;
+    deposit[] public deposits;
 
     event DepositEvent(
         uint256 _index,
@@ -83,13 +83,17 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     }
 
     function estimateFee(address _token) public view returns(uint256) {
+        uint256 extrafee = 0;
+        if (_token != address(0)) {
+            extrafee = 1;
+        }
         uint256 gasLimit = gasLimits[_token];
         if (gasLimit == 0) {
             gasLimit = defaultGasLimit;
         }
         uint256 gasPrice = minGasPrice > tx.gasprice? minGasPrice:tx.gasprice;
         uint256 withdrawFee = (gasPrice * gasLimit);
-        return withdrawFee + protocolFee;
+        return withdrawFee + protocolFee + extrafee;
     }
 
     function makeDeposit(
