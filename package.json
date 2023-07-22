@@ -1,0 +1,24 @@
+{
+  "name": "frens",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.1",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@openzeppelin/contracts": "^4.9.2",
+    "ethers": "^6.6.0",
+    "hardhat": "^2.15.0"
+  },
+  "dependencies": {
+    "@opengsn/cli": "^3.0.0-beta.6",
+    "@poanet/solidity-flattener": "^3.0.9"
+  }
+}
