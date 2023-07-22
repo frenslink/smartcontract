@@ -83,17 +83,13 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     }
 
     function estimateFee(address _token) public view returns(uint256) {
-        uint256 extrafee = 0;
-        if (_token != address(0)) {
-            extrafee = 1;
-        }
         uint256 gasLimit = gasLimits[_token];
         if (gasLimit == 0) {
             gasLimit = defaultGasLimit;
         }
         uint256 gasPrice = minGasPrice > tx.gasprice? minGasPrice:tx.gasprice;
         uint256 withdrawFee = (gasPrice * gasLimit);
-        return withdrawFee + protocolFee + extrafee;
+        return withdrawFee + protocolFee;
     }
 
     function makeDeposit(
@@ -104,7 +100,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         address _pubKey
     ) external payable returns (uint256) {
         uint256 fee = estimateFee(_tokenAddress);
-        require(msg.value > fee, "NOT ENOUGH ETH");
+        require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
 
         // check that the contract type is valid
         require(_contractType < 4, "INVALID CONTRACT TYPE");
@@ -112,10 +108,11 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // handle deposit types
         if (_contractType == 0) {
             _amount = msg.value - fee;
+            require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
             profit += fee;
-            // override amount with msg.value
         } else {
             if (_contractType == 1) {
+                require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
                 // REMINDER: User must approve this contract to spend the tokens before calling this function
                 // Unfortunately there's no way of doing this in just one transaction.
                 // Wallet abstraction pls

@@ -1361,7 +1361,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 depositedAt; // The block of deposit
     }
 
-    deposit[] private deposits;
+    deposit[] public deposits;
 
     event DepositEvent(
         uint256 _index,
@@ -1429,7 +1429,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         address _pubKey
     ) external payable returns (uint256) {
         uint256 fee = estimateFee(_tokenAddress);
-        require(msg.value > fee, "NOT ENOUGH ETH");
+        require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
 
         // check that the contract type is valid
         require(_contractType < 4, "INVALID CONTRACT TYPE");
@@ -1437,10 +1437,11 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // handle deposit types
         if (_contractType == 0) {
             _amount = msg.value - fee;
+            require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
             profit += fee;
-            // override amount with msg.value
         } else {
             if (_contractType == 1) {
+                require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
                 // REMINDER: User must approve this contract to spend the tokens before calling this function
                 // Unfortunately there's no way of doing this in just one transaction.
                 // Wallet abstraction pls
