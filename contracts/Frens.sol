@@ -175,7 +175,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                 tokenId: _tokenId,
                 pubKey: _pubKey,
                 sender: _msgSender(),
-                depositedAt: block.timestamp
+                depositedAt: block.number
             })
         );
 
@@ -231,7 +231,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                 tokenId: _tokenId,
                 pubKey: _pubKey,
                 sender: _msgSender(),
-                depositedAt: block.timestamp
+                depositedAt: block.number
             })
         );
 
@@ -290,7 +290,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                 tokenId: _tokenId,
                 pubKey: _pubKey,
                 sender: _msgSender(),
-                depositedAt: block.timestamp
+                depositedAt: block.number
             })
         );
 
@@ -353,7 +353,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     tokenId: _tokenId,
                     pubKey: _pubKey,
                     sender: _msgSender(),
-                    depositedAt: block.timestamp
+                    depositedAt: block.number
                 })
             );
 
