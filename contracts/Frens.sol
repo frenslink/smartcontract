@@ -220,8 +220,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         return deposits.length - 1;
     }
 
-    // Beta testing
-    function makeBulkDeposits(
+    function makeBatchDeposits(
         address _tokenAddress,
         uint8 _contractType,
         uint256 _amount,

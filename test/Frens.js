@@ -14,6 +14,11 @@ describe("Frens", function () {
     return { frens };
   }
 
+  async function deployERC20() {
+    const erc20 = await ethers.deployContract("USDC",);
+    return { erc20 };
+  }
+
   it("Should set the right GSN provider", async function () {
     const { frens } = await loadFixture(deployFrens);
 
@@ -89,7 +94,7 @@ describe("Frens", function () {
     expect(await frens.isAllowDepositToken(addr3)).to.equal(true)
   });
 
-  it("Should make deposit", async function () {
+  it("Should make deposit eth", async function () {
     const { frens } = await loadFixture(deployFrens);
     const tokenAddress = "0x0000000000000000000000000000000000000000"
     const contractType = 0
@@ -111,6 +116,62 @@ describe("Frens", function () {
     expect(args[2]).to.equal(tokenAddress);
     expect(args[3]).to.equal(sentValue);
     expect(args[4]).to.equal(owner.address);
+  });
+
+  it("Should make deposit erc20", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    const { erc20 } = await loadFixture(deployERC20);
+    const decimals = await erc20.decimals()
+    const tokenAddress = erc20.target;
+    const contractType = 1
+    const amount = BigInt(100) * decimals
+    const tokenId = 0
+    const pubKey20 = "0x0000000000000000000000000000000000000000"
+
+    const fee = await frens.estimateFee(erc20.target);
+    expect(await frens.getDepositCount()).to.equal(0);
+
+
+    const [owner] = await ethers.getSigners();
+    await expect(frens.makeDeposit(tokenAddress, contractType, amount, tokenId, pubKey20, {value:fee})).to.be.revertedWith('INSUFFICIENT ALLOWANCE')
+
+    await erc20.approve(frens.target, amount, {"from": owner.address})
+    const tx = await frens.makeDeposit(tokenAddress, contractType, amount, tokenId, pubKey20, {value:fee});
+    const rc = await tx.wait();
+    const c = await frens.getDepositCount();
+    expect(c).to.equal(1);
+    const args = rc.logs[rc.logs.length-1].args
+    expect(args[0]).to.equal(c-BigInt(1));
+    expect(args[1]).to.equal(contractType);
+    expect(args[2]).to.equal(tokenAddress);
+    expect(args[3]).to.equal(amount);
+    expect(args[4]).to.equal(owner.address);
+  });
+
+  it("Should make bulk deposits", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    const tokenAddress = "0x0000000000000000000000000000000000000000"
+    const contractType = 0
+    const amount = 0
+    const pubKeys = ["0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000001"]
+
+    const fee = await frens.estimateFee(ZERO_ADDRESS);
+    const sentValue = ethers.parseEther("0.0124", "ether")
+    expect(await frens.getDepositCount()).to.equal(0);
+    const [owner] = await ethers.getSigners();
+    const tx = await frens.makeBatchDeposits(tokenAddress, contractType, amount, pubKeys, {value: sentValue + (fee*BigInt(pubKeys.length))});
+    const rc = await tx.wait()
+    const c = await frens.getDepositCount();
+    expect(c).to.equal(2);
+    for (var log of rc.logs) {
+      const args = log.args;
+      expect(args[1]).to.equal(contractType);
+      expect(args[2]).to.equal(tokenAddress);
+      expect(args[3]).to.equal(sentValue/BigInt(pubKeys.length));
+      expect(args[4]).to.equal(owner.address);
+    }
+
+    await expect(frens.makeBatchDeposits(tokenAddress, 2, amount, pubKeys, {value: sentValue + (fee*BigInt(pubKeys.length))})).to.be.revertedWith("INVALID CONTRACT TYPE")
   });
 
   it("Should withdraw sucessfully", async function () {
