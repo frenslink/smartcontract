@@ -20,7 +20,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     uint256 public protocolFee = 0.0005 ether;
     uint256 public profit = 0;
     uint256 public minGasPrice = 0;
-
+    address[] public whiteListTokens;
 
     struct deposit {
         address pubKey; // Key to lock the token
@@ -92,6 +92,22 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         return withdrawFee + protocolFee;
     }
 
+    function setWhiteListTokens(address[] memory _tokenAddress) external  onlyOwner {
+        whiteListTokens = _tokenAddress;
+    }
+
+    function isAllowDepositToken(address _tokenAddress) public view returns(bool){
+        if (whiteListTokens.length == 0) {
+            return true;
+        }
+        for (uint256 i = 0; i< whiteListTokens.length; i++) {
+            if (whiteListTokens[i] == _tokenAddress) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function makeDeposit(
         address _tokenAddress,
         uint8 _contractType,
@@ -99,18 +115,33 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 _tokenId,
         address _pubKey
     ) external payable returns (uint256) {
+        require(_contractType < 4, "INVALID CONTRACT TYPE");
+        require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
+
         uint256 fee = estimateFee(_tokenAddress);
         require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
-
-        // check that the contract type is valid
-        require(_contractType < 4, "INVALID CONTRACT TYPE");
-
-        // handle deposit types
         if (_contractType == 0) {
             _amount = msg.value - fee;
-            require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
             profit += fee;
         } else {
+            profit += msg.value;
+        }
+        return _makeDeposit(_tokenAddress, _contractType, _amount, _tokenId, _pubKey);
+    }
+
+    function _makeDeposit(
+        address _tokenAddress,
+        uint8 _contractType,
+        uint256 _amount,
+        uint256 _tokenId,
+        address _pubKey
+    ) private returns (uint256) {
+        // handle deposit types
+        if (_contractType == 0) {
+            require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
+            require(_tokenAddress == address(0), "tokenAddress must be zero");
+        } else {
+            require(_tokenAddress != address(0), "tokenAddress must not be zero");
             if (_contractType == 1) {
                 require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
                 // REMINDER: User must approve this contract to spend the tokens before calling this function
@@ -161,9 +192,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "Internal transfer"
                 );
             }
-
-            // adds profit
-            profit += msg.value;
         }
 
         // create deposit
@@ -190,6 +218,33 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
         // return id of new deposit
         return deposits.length - 1;
+    }
+
+    // Beta testing
+    function makeBulkDeposits(
+        address _tokenAddress,
+        uint8 _contractType,
+        uint256 _amount,
+        address[] memory _pubKeys
+    ) external payable {
+        require(_pubKeys.length > 0, "pubKeys can not be empty");
+        require(_contractType < 2, "INVALID CONTRACT TYPE");
+        require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
+
+        uint256 fee = _pubKeys.length * estimateFee(_tokenAddress);
+        require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
+        if (_contractType == 0) {
+            _amount = msg.value - fee;
+            require(_amount > 0, "CAN NOT SENT ZERO TOKEN");
+            profit += fee;
+        } else {
+            profit += msg.value;
+        }
+
+        uint256 amountPerDeposit = _amount/_pubKeys.length;
+        for (uint256 i = 0; i< _pubKeys.length; i++) {
+            _makeDeposit(_tokenAddress, _contractType, amountPerDeposit, 0, _pubKeys[i]);
+        }
     }
 
     /**

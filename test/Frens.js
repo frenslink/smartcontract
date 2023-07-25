@@ -69,6 +69,26 @@ describe("Frens", function () {
     expect(await frens.estimateFee(ZERO_ADDRESS)).to.equal(protocolFee + (gasLimit*gasPrice));
   });
 
+  it("Should update white list tokens", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    await expect(frens.whiteListTokens(0)).to.be.revertedWithoutReason();
+    const [owner, addr1, addr2, addr3] = await ethers.getSigners();
+    await frens.setWhiteListTokens([ZERO_ADDRESS, owner, addr1, addr2])
+
+    expect(await frens.whiteListTokens(0)).to.equal(ZERO_ADDRESS)
+    expect(await frens.whiteListTokens(1)).to.equal(owner.address)
+    expect(await frens.whiteListTokens(2)).to.equal(addr1.address)
+    expect(await frens.whiteListTokens(3)).to.equal(addr2.address)
+    await expect(frens.whiteListTokens(4)).to.be.revertedWithoutReason();
+
+    expect(await frens.isAllowDepositToken(ZERO_ADDRESS)).to.equal(true)
+    expect(await frens.isAllowDepositToken(addr3)).to.equal(false)
+
+    await frens.setWhiteListTokens([])
+    await expect(frens.whiteListTokens(0)).to.be.revertedWithoutReason();
+    expect(await frens.isAllowDepositToken(addr3)).to.equal(true)
+  });
+
   it("Should make deposit", async function () {
     const { frens } = await loadFixture(deployFrens);
     const tokenAddress = "0x0000000000000000000000000000000000000000"
