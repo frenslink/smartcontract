@@ -73,6 +73,13 @@ describe("Frens", function () {
     expect(await frens.estimateFee(0)).to.equal(protocolFee + gasFee);
   });
 
+  it("Should toogleAllowReceivingNFT ok", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    expect( await frens.allowReceivingNFT()).to.equal(false);
+    await frens.toogleAllowReceivingNFT();
+    expect( await frens.allowReceivingNFT()).to.equal(true);
+  });
+
   it("Should update white list tokens", async function () {
     const { frens } = await loadFixture(deployFrens);
     await expect(frens.whiteListTokens(0)).to.be.revertedWithoutReason();

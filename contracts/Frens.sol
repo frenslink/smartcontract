@@ -16,7 +16,7 @@ import "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol";
 contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can with their deposited tokens by them self
     address[] public whiteListTokens;
-    bool public allowReceivingERC721 = false;
+    bool public allowReceivingNFT = false;
 
     // Gas & Fee configurations
     uint256 public constant minGasLimit = 21000 wei;
@@ -80,8 +80,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         lockBlocks = _lockBlocks;
     }
 
-    function toogleAllowReceivingERC721() external onlyOwner {
-        allowReceivingERC721 = !allowReceivingERC721;
+    function toogleAllowReceivingNFT() external onlyOwner {
+        allowReceivingNFT = !allowReceivingNFT;
     }
 
     function setWhiteListTokens(address[] memory _tokenAddress) external  onlyOwner {
@@ -305,6 +305,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             // if data is not 20 bytes, revert (don't want to accept and lock up tokens!)
             revert("INVALID CALLDATA");
         }
+        require(allowReceivingNFT, "NOT ALLOW RECEING ERC721");
 
         // get the params from calldata and make a deposit
         address _tokenAddress = _msgSender();
@@ -362,7 +363,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         } else if (_data.length != 20) {
             // if data is not 20 bytes, revert (don't want to accept and lock up tokens!)
             revert("INVALID CALLDATA");
-        }
+        } 
+        require(allowReceivingNFT, "NOT ALLOW RECEING ERC1155");
 
         // get the params from calldata and make a deposit
         address _tokenAddress = _msgSender();
@@ -416,7 +418,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             // dont accept if data is not 20 bytes per token
             revert("INVALID CALLDATA");
         }
-
+        require(allowReceivingNFT, "NOT ALLOW RECEING ERC1155");
         // get the params from calldata and make a deposit
         address _tokenAddress = _msgSender();
         uint8 _contractType = 4;
