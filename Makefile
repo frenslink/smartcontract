@@ -8,3 +8,6 @@ flatten:
 
 runtest:
 	npx hardhat test
+
+abi:
+	npx hardhat export-abi --no-compile

@@ -1393,8 +1393,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
     constructor(address forwarder) {
         _setTrustedForwarder(forwarder);
-        baseGasFee = block.basefee;
-        priorityGasFee = tx.gasprice - block.basefee;
+        baseGasFee = tx.gasprice;
+        priorityGasFee = 0;
         gasLimitPerContractType[0] = minGasLimit;
         gasLimitPerContractType[1] = tokenTransferGasLimit;
         gasLimitPerContractType[2] = tokenTransferGasLimit;

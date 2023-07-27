@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require('hardhat-abi-exporter');
 
 module.exports = {
   solidity: "0.8.20",
@@ -13,4 +14,12 @@ module.exports = {
       },
     },
   },
+  abiExporter: [
+    {
+      path: './abi/',
+      format: "json",
+      only: ['Frens'],
+    }
+  ]
 };
+

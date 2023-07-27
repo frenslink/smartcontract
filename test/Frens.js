@@ -60,7 +60,7 @@ describe("Frens", function () {
 
   it("Should set the right priorityGasFee", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.priorityGasFee()).to.greaterThan(0);
+    expect(await frens.priorityGasFee()).to.equal(0);
     await frens.setPriorityGasFee(10000);
     expect(await frens.priorityGasFee()).to.equal(10000);
   });

@@ -14,7 +14,7 @@ import "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol";
 
 
 contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
-    uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can with their deposited tokens by them self
+    uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can withdraw their deposited tokens by them self
     address[] public whiteListTokens;
     bool public allowReceivingNFT = false;
 
@@ -64,8 +64,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
     constructor(address forwarder) {
         _setTrustedForwarder(forwarder);
-        baseGasFee = block.basefee;
-        priorityGasFee = tx.gasprice - block.basefee;
+        baseGasFee = tx.gasprice;
+        priorityGasFee = 0;
         gasLimitPerContractType[0] = minGasLimit;
         gasLimitPerContractType[1] = tokenTransferGasLimit;
         gasLimitPerContractType[2] = tokenTransferGasLimit;
