@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,13 +14,22 @@ import "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol";
 
 
 contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
-    uint256 public lockBlocks = 12; // 12 blocks
-    mapping(address => uint256) public gasLimits;
-    uint256 public defaultGasLimit = 21000;
-    uint256 public protocolFee = 0.0005 ether;
-    uint256 public profit = 0;
-    uint256 public minGasPrice = 0;
+    uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can with their deposited tokens by them self
     address[] public whiteListTokens;
+    bool public allowReceivingNFT = false;
+
+    // Gas & Fee configurations
+    uint256 public constant minGasLimit = 21000 wei;
+    uint256 public constant tokenTransferGasLimit = 100000 wei;
+
+    mapping(uint8 => uint256) public gasLimitPerContractType;
+    uint256 public baseGasFee = 0;
+    uint256 public priorityGasFee = 0;
+
+    uint256 public constant defaultProtocolFee = 0.0005 ether;
+    mapping(uint8 => uint256) public protocolFeePerContractType;
+    uint256 public protocolBalance = 0;
+    // ---------------------------------------- //
 
     struct deposit {
         address pubKey; // Key to lock the token
@@ -55,7 +64,12 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
     constructor(address forwarder) {
         _setTrustedForwarder(forwarder);
-        minGasPrice = tx.gasprice;
+        baseGasFee = block.basefee;
+        priorityGasFee = tx.gasprice - block.basefee;
+        gasLimitPerContractType[0] = minGasLimit;
+        gasLimitPerContractType[1] = tokenTransferGasLimit;
+        gasLimitPerContractType[2] = tokenTransferGasLimit;
+        gasLimitPerContractType[3] = tokenTransferGasLimit;
     }
 
     function setTrustedForwarder(address _forwarder) external onlyOwner {
@@ -66,30 +80,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         lockBlocks = _lockBlocks;
     }
 
-    function setGasLimit(address _token, uint256 _gasLimit) external onlyOwner {
-        gasLimits[_token] = _gasLimit;
-    }
-
-    function setDefaultGasLimit(uint256 _gasLimit) external onlyOwner {
-        defaultGasLimit = _gasLimit;
-    }
-
-    function setProtocolFee(uint256 _protocolFee) external onlyOwner {
-        protocolFee = _protocolFee;
-    }
-
-    function setMinGasPrice(uint256 _minGasPrice) external onlyOwner {
-        minGasPrice = _minGasPrice;
-    }
-
-    function estimateFee(address _token) public view returns(uint256) {
-        uint256 gasLimit = gasLimits[_token];
-        if (gasLimit == 0) {
-            gasLimit = defaultGasLimit;
-        }
-        uint256 gasPrice = minGasPrice > tx.gasprice? minGasPrice:tx.gasprice;
-        uint256 withdrawFee = (gasPrice * gasLimit);
-        return withdrawFee + protocolFee;
+    function toogleAllowReceivingNFT() external onlyOwner {
+        allowReceivingNFT = !allowReceivingNFT;
     }
 
     function setWhiteListTokens(address[] memory _tokenAddress) external  onlyOwner {
@@ -108,6 +100,50 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         return false;
     }
 
+    function setGasLimit(uint8 _contractType, uint256 _gasLimit) external onlyOwner {
+        require(_contractType < 4, "INVALID CONTRACT TYPE");
+        require(_gasLimit >= minGasLimit, "INVALID GAS LIMIT");
+        gasLimitPerContractType[_contractType] = _gasLimit;
+    }
+
+    function setBaseGasFee(uint256 _baseGasFee) external onlyOwner {
+        baseGasFee = _baseGasFee;
+    }
+
+    function setPriorityGasFee(uint256 _priorityGasFee) external onlyOwner {
+        priorityGasFee = _priorityGasFee;
+    }
+
+    function setProtocolFee(uint8 _contractType, uint256 _protocolFee) external onlyOwner {
+        require(_contractType < 4, "INVALID CONTRACT TYPE");
+        require(_protocolFee > 0, "INVALID PROCOL FEE");
+        protocolFeePerContractType[_contractType] = _protocolFee;
+    }
+
+    function estimateGasFeeForWithdrawing(uint8 _contractType) public view returns(uint256) {
+        uint256 gasLimit = gasLimitPerContractType[_contractType];
+        if (gasLimit == 0) {
+            gasLimit = minGasLimit;
+        }
+        uint256 gasPrice = baseGasFee + priorityGasFee;
+        if (gasPrice < tx.gasprice) {
+            gasPrice = tx.gasprice;
+        }
+        return gasLimit * gasPrice;
+    }
+
+    function estimateProtocolFee(uint8 _contractType) public view returns(uint256) {
+        uint256 fee = protocolFeePerContractType[_contractType];
+        if (fee == 0) {
+            return defaultProtocolFee;
+        }
+        return fee;
+    }
+
+    function estimateFee(uint8 _contractType) public view returns(uint256) {
+        return estimateProtocolFee(_contractType) + estimateGasFeeForWithdrawing(_contractType);
+    }
+
     function makeDeposit(
         address _tokenAddress,
         uint8 _contractType,
@@ -118,13 +154,13 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         require(_contractType < 4, "INVALID CONTRACT TYPE");
         require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
 
-        uint256 fee = estimateFee(_tokenAddress);
+        uint256 fee = estimateFee(_contractType);
         require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
         if (_contractType == 0) {
             _amount = msg.value - fee;
-            profit += fee;
+            protocolBalance += fee;
         } else {
-            profit += msg.value;
+            protocolBalance += msg.value;
         }
         return _makeDeposit(_tokenAddress, _contractType, _amount, _tokenId, _pubKey);
     }
@@ -230,14 +266,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         require(_contractType < 2, "INVALID CONTRACT TYPE");
         require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
 
-        uint256 fee = _pubKeys.length * estimateFee(_tokenAddress);
+        uint256 fee = _pubKeys.length * estimateFee(_contractType);
         require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
         if (_contractType == 0) {
             _amount = msg.value - fee;
             require(_amount > 0, "CAN NOT SENT ZERO TOKEN");
-            profit += fee;
+            protocolBalance += fee;
         } else {
-            profit += msg.value;
+            protocolBalance += msg.value;
         }
 
         uint256 amountPerDeposit = _amount/_pubKeys.length;
@@ -269,6 +305,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             // if data is not 20 bytes, revert (don't want to accept and lock up tokens!)
             revert("INVALID CALLDATA");
         }
+        require(allowReceivingNFT, "NOT ALLOW RECEING ERC721");
 
         // get the params from calldata and make a deposit
         address _tokenAddress = _msgSender();
@@ -326,7 +363,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         } else if (_data.length != 20) {
             // if data is not 20 bytes, revert (don't want to accept and lock up tokens!)
             revert("INVALID CALLDATA");
-        }
+        } 
+        require(allowReceivingNFT, "NOT ALLOW RECEING ERC1155");
 
         // get the params from calldata and make a deposit
         address _tokenAddress = _msgSender();
@@ -380,7 +418,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             // dont accept if data is not 20 bytes per token
             revert("INVALID CALLDATA");
         }
-
+        require(allowReceivingNFT, "NOT ALLOW RECEING ERC1155");
         // get the params from calldata and make a deposit
         address _tokenAddress = _msgSender();
         uint8 _contractType = 4;
@@ -554,10 +592,10 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
 
     function withdrawProfit(address payable payee) external onlyOwner {
-        require(profit > 0, "No profit");
-        payee.transfer(profit);
-        profit = 0;
-        emit WithdrawnProfit(payee, profit);
+        require(protocolBalance > 0, "No profit");
+        payee.transfer(protocolBalance);
+        protocolBalance = 0;
+        emit WithdrawnProfit(payee, protocolBalance);
     }
 
     /**

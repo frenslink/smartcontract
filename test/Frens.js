@@ -31,47 +31,53 @@ describe("Frens", function () {
 
   it("Should set the right lockBlocks", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.lockBlocks()).to.equal(12);
+    expect(await frens.lockBlocks()).to.equal(100);
     await frens.setLockBlocks(13);
     expect(await frens.lockBlocks()).to.equal(13);
   });
 
   it("Should set the right gasLimits", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.gasLimits(ZERO_ADDRESS)).to.equal(0);
+    expect(await frens.gasLimitPerContractType(0)).to.equal(21000);
     await frens.setGasLimit(ZERO_ADDRESS, 30000);
-    expect(await frens.gasLimits(ZERO_ADDRESS)).to.equal(30000);
-  });
-
-  it("Should set the right default gas limit", async function () {
-    const { frens } = await loadFixture(deployFrens);
-    expect(await frens.defaultGasLimit()).to.equal(21000);
-    await frens.setDefaultGasLimit(30000);
-    expect(await frens.defaultGasLimit()).to.equal(30000);
+    expect(await frens.gasLimitPerContractType(0)).to.equal(30000);
   });
 
   it("Should set the right protocol fee", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.protocolFee()).to.equal(ethers.parseEther("0.0005", "ether"));
-    const newEther = ethers.parseEther("0.0001", "ether")
-    await frens.setProtocolFee(newEther);
-    expect(await frens.protocolFee()).to.equal(newEther);
+    expect(await frens.estimateProtocolFee(0)).to.equal(ethers.parseEther("0.0005", "ether"));
+    const newEther = ethers.parseEther("0.01", "ether")
+    await frens.setProtocolFee(0, newEther);
+    expect(await frens.estimateProtocolFee(0)).to.equal(newEther);
   });
 
-  it("Should set the right min gas price", async function () {
+  it("Should set the right baseGasFee", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.protocolFee()).to.greaterThan(0);
-    await frens.setMinGasPrice(10000);
-    expect(await frens.minGasPrice()).to.equal(10000);
+    expect(await frens.baseGasFee()).to.greaterThan(0);
+    await frens.setBaseGasFee(10000);
+    expect(await frens.baseGasFee()).to.equal(10000);
+  });
+
+  it("Should set the right priorityGasFee", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    expect(await frens.priorityGasFee()).to.greaterThan(0);
+    await frens.setPriorityGasFee(10000);
+    expect(await frens.priorityGasFee()).to.equal(10000);
   });
 
   it("Should estimate right fee", async function () {
     const { frens } = await loadFixture(deployFrens);
 
-    const gasLimit = await frens.defaultGasLimit();
-    const gasPrice = await frens.minGasPrice();
-    const protocolFee = await frens.protocolFee();
-    expect(await frens.estimateFee(ZERO_ADDRESS)).to.equal(protocolFee + (gasLimit*gasPrice));
+    const gasFee = await frens.estimateGasFeeForWithdrawing(0);
+    const protocolFee = await frens.estimateProtocolFee(0);
+    expect(await frens.estimateFee(0)).to.equal(protocolFee + gasFee);
+  });
+
+  it("Should toogleAllowReceivingNFT ok", async function () {
+    const { frens } = await loadFixture(deployFrens);
+    expect( await frens.allowReceivingNFT()).to.equal(false);
+    await frens.toogleAllowReceivingNFT();
+    expect( await frens.allowReceivingNFT()).to.equal(true);
   });
 
   it("Should update white list tokens", async function () {
@@ -128,7 +134,7 @@ describe("Frens", function () {
     const tokenId = 0
     const pubKey20 = "0x0000000000000000000000000000000000000000"
 
-    const fee = await frens.estimateFee(erc20.target);
+    const fee = await frens.estimateFee(1);
     expect(await frens.getDepositCount()).to.equal(0);
 
 
