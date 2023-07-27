@@ -19,12 +19,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     bool public allowReceivingERC721 = false;
 
     // Gas & Fee configurations
-    uint256 public defaultGasLimit = 21000;
+    uint256 public constant minGasLimit = 21000 wei;
+    uint256 public constant tokenTransferGasLimit = 100000 wei;
+
     mapping(uint8 => uint256) public gasLimitPerContractType;
     uint256 public baseGasFee = 0;
     uint256 public priorityGasFee = 0;
 
-    uint256 public defaultProtocolFee = 0.0005 ether;
+    uint256 public constant defaultProtocolFee = 0.0005 ether;
     mapping(uint8 => uint256) public protocolFeePerContractType;
     uint256 public protocolBalance = 0;
     // ---------------------------------------- //
@@ -64,6 +66,10 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         _setTrustedForwarder(forwarder);
         baseGasFee = block.basefee;
         priorityGasFee = tx.gasprice - block.basefee;
+        gasLimitPerContractType[0] = minGasLimit;
+        gasLimitPerContractType[1] = tokenTransferGasLimit;
+        gasLimitPerContractType[2] = tokenTransferGasLimit;
+        gasLimitPerContractType[3] = tokenTransferGasLimit;
     }
 
     function setTrustedForwarder(address _forwarder) external onlyOwner {
@@ -96,7 +102,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
     function setGasLimit(uint8 _contractType, uint256 _gasLimit) external onlyOwner {
         require(_contractType < 4, "INVALID CONTRACT TYPE");
-        require(_gasLimit >= defaultGasLimit, "INVALID GAS LIMIT");
+        require(_gasLimit >= minGasLimit, "INVALID GAS LIMIT");
         gasLimitPerContractType[_contractType] = _gasLimit;
     }
 
@@ -117,7 +123,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function estimateGasFeeForWithdrawing(uint8 _contractType) public view returns(uint256) {
         uint256 gasLimit = gasLimitPerContractType[_contractType];
         if (gasLimit == 0) {
-            gasLimit = defaultGasLimit;
+            gasLimit = minGasLimit;
         }
         uint256 gasPrice = baseGasFee + priorityGasFee;
         if (gasPrice < tx.gasprice) {

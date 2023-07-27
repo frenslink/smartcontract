@@ -31,14 +31,14 @@ describe("Frens", function () {
 
   it("Should set the right lockBlocks", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.lockBlocks()).to.equal(12);
+    expect(await frens.lockBlocks()).to.equal(100);
     await frens.setLockBlocks(13);
     expect(await frens.lockBlocks()).to.equal(13);
   });
 
   it("Should set the right gasLimits", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.gasLimitPerContractType(0)).to.equal(0);
+    expect(await frens.gasLimitPerContractType(0)).to.equal(21000);
     await frens.setGasLimit(ZERO_ADDRESS, 30000);
     expect(await frens.gasLimitPerContractType(0)).to.equal(30000);
   });
@@ -46,7 +46,7 @@ describe("Frens", function () {
   it("Should set the right protocol fee", async function () {
     const { frens } = await loadFixture(deployFrens);
     expect(await frens.estimateProtocolFee(0)).to.equal(ethers.parseEther("0.0005", "ether"));
-    const newEther = ethers.parseEther("0.0001", "ether")
+    const newEther = ethers.parseEther("0.01", "ether")
     await frens.setProtocolFee(0, newEther);
     expect(await frens.estimateProtocolFee(0)).to.equal(newEther);
   });
