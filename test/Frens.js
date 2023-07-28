@@ -187,10 +187,10 @@ describe("Frens", function () {
     const amount = 0
     const tokenId = 0
 
-    const fee = await frens.estimateFee(ZERO_ADDRESS);
+    const fee = await frens.estimateFee(0);
     const sentValue = ethers.parseEther("0.0123", "ether")
     expect(await frens.getDepositCount()).to.equal(0);
-    const [_, sender, receipient] = await ethers.getSigners();
+    const [_, sender, receipient, profitReceipient] = await ethers.getSigners();
     await frens.connect(sender)
 
     const password = "abcxyz"
@@ -200,13 +200,12 @@ describe("Frens", function () {
     const rc = await tx.wait()
     const args = rc.logs[0].args
     const dIndex = args[0]
-    const beforeWithdrawBalance = await ethers.provider.getBalance(receipient.address)
+    const b = await ethers.provider.getBalance(receipient.address)
     
     const addressHash = await ethers.solidityPackedKeccak256(["address"], [receipient.address])
     const addressHashBinary = await ethers.getBytes(addressHash);
     const addressHashEIP191 = await ethers.hashMessage(addressHashBinary);
     const signature = await signAddress(addressHashBinary, keys.privateKey);
-    // console.log(addressHash, addressHashBinary, addressHashEIP191, signature)
 
     const tx1 = await frens.withdrawDeposit(dIndex, receipient.address, addressHashEIP191, signature);
     const rc1 = await tx1.wait(1)
@@ -216,9 +215,20 @@ describe("Frens", function () {
     expect(args1[2]).to.equal(tokenAddress);
     expect(args1[3]).to.equal(sentValue);
     expect(args1[4]).to.equal(receipient.address);
-    const afterWithdrawBalance = await ethers.provider.getBalance(receipient.address)
-    expect(afterWithdrawBalance).to.equal(beforeWithdrawBalance + sentValue)
+    const b1 = await ethers.provider.getBalance(receipient.address)
+    expect(b1).to.equal(b + sentValue)
+
+    const b2 = await ethers.provider.getBalance(profitReceipient.address)
+    const tx2 = await frens.withdrawProfit(profitReceipient.address);
+    const rc2 = await tx2.wait();
+    const args2 = rc2.logs[0].args;
+    expect(args2[0]).to.equal(profitReceipient.address);
+    expect(args2[1]).to.equal(fee);
+    const b3 = await ethers.provider.getBalance(profitReceipient.address)
+    expect(b3).to.equal(b2+fee);
   });
+
+
 });
 
 async function signAddress(addressHashBinary, privateKey) {

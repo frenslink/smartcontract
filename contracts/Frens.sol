@@ -594,8 +594,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function withdrawProfit(address payable payee) external onlyOwner {
         require(protocolBalance > 0, "No profit");
         payee.transfer(protocolBalance);
-        protocolBalance = 0;
         emit WithdrawnProfit(payee, protocolBalance);
+        protocolBalance = 0;
     }
 
     /**

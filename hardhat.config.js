@@ -18,6 +18,7 @@ module.exports = {
     {
       path: './abi/',
       format: "json",
+      flat: true,
       only: ['Frens'],
     }
   ]
