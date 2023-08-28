@@ -172,21 +172,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 _tokenId,
         address _pubKey
     ) private returns (uint256) {
+        require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
         // handle deposit types
         if (_contractType == 0) {
-            require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
             require(_tokenAddress == address(0), "tokenAddress must be zero");
         } else {
             require(_tokenAddress != address(0), "tokenAddress must not be zero");
             if (_contractType == 1) {
-                require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
-                // REMINDER: User must approve this contract to spend the tokens before calling this function
-                // Unfortunately there's no way of doing this in just one transaction.
-                // Wallet abstraction pls
-
                 IERC20 token = IERC20(_tokenAddress);
-
-                // require users token balance to be greater than or equal to the amount being deposited
                 require(
                     token.balanceOf(_msgSender()) >= _amount,
                     "INSUFFICIENT TOKEN BALANCE"
@@ -204,11 +197,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "TRANSFER FAILED. CHECK ALLOWANCE & BALANCE"
                 );
             } else if (_contractType == 2) {
-                // REMINDER: User must approve this contract to spend the tokens before calling this function.
-                // alternatively, the user can call the safeTransferFrom function directly and append the appropriate calldata
-
+                _amount = 1;
                 IERC721 token = IERC721(_tokenAddress);
-                // require(token.ownerOf(_tokenId) == _msgSender(), "Invalid token id");
                 token.safeTransferFrom(
                     _msgSender(),
                     address(this),
@@ -216,9 +206,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "Internal transfer"
                 );
             } else if (_contractType == 3) {
-                // REMINDER: User must approve this contract to spend the tokens before calling this function.
-                // alternatively, the user can call the safeTransferFrom function directly and append the appropriate calldata
-
                 IERC1155 token = IERC1155(_tokenAddress);
                 token.safeTransferFrom(
                     _msgSender(),

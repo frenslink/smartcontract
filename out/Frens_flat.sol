@@ -1343,7 +1343,7 @@ abstract contract ERC2771Recipient is IERC2771Recipient {
 
 
 contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
-    uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can with their deposited tokens by them self
+    uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can withdraw their deposited tokens by them self
     address[] public whiteListTokens;
     bool public allowReceivingNFT = false;
 
@@ -1533,11 +1533,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "TRANSFER FAILED. CHECK ALLOWANCE & BALANCE"
                 );
             } else if (_contractType == 2) {
-                // REMINDER: User must approve this contract to spend the tokens before calling this function.
-                // alternatively, the user can call the safeTransferFrom function directly and append the appropriate calldata
-
+                _amount = 1;
                 IERC721 token = IERC721(_tokenAddress);
-                // require(token.ownerOf(_tokenId) == _msgSender(), "Invalid token id");
                 token.safeTransferFrom(
                     _msgSender(),
                     address(this),
@@ -1545,9 +1542,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "Internal transfer"
                 );
             } else if (_contractType == 3) {
-                // REMINDER: User must approve this contract to spend the tokens before calling this function.
-                // alternatively, the user can call the safeTransferFrom function directly and append the appropriate calldata
-
+                _amount = 1;
                 IERC1155 token = IERC1155(_tokenAddress);
                 token.safeTransferFrom(
                     _msgSender(),
