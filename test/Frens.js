@@ -38,9 +38,9 @@ describe("Frens", function () {
 
   it("Should set the right gasLimits", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.gasLimitPerContractType(0)).to.equal(21000);
+    expect(await frens.gasLimitConfigs(0)).to.equal(21000);
     await frens.setGasLimit(ZERO_ADDRESS, 30000);
-    expect(await frens.gasLimitPerContractType(0)).to.equal(30000);
+    expect(await frens.gasLimitConfigs(0)).to.equal(30000);
   });
 
   it("Should set the right protocol fee", async function () {
@@ -68,16 +68,9 @@ describe("Frens", function () {
   it("Should estimate right fee", async function () {
     const { frens } = await loadFixture(deployFrens);
 
-    const gasFee = await frens.estimateGasFeeForWithdrawing(0);
+    const gasFee = await frens.estimateGasFeeForClaim(0);
     const protocolFee = await frens.estimateProtocolFee(0);
-    expect(await frens.estimateFee(0)).to.equal(protocolFee + gasFee);
-  });
-
-  it("Should toogleAllowReceivingNFT ok", async function () {
-    const { frens } = await loadFixture(deployFrens);
-    expect( await frens.allowReceivingNFT()).to.equal(false);
-    await frens.toogleAllowReceivingNFT();
-    expect( await frens.allowReceivingNFT()).to.equal(true);
+    expect(await frens.estimateDepositFee(0)).to.equal(protocolFee + gasFee);
   });
 
   it("Should update white list tokens", async function () {
@@ -100,25 +93,25 @@ describe("Frens", function () {
     expect(await frens.isAllowDepositToken(addr3)).to.equal(true)
   });
 
-  it("Should make deposit eth", async function () {
+  it("Should make deposit native token", async function () {
     const { frens } = await loadFixture(deployFrens);
     const tokenAddress = "0x0000000000000000000000000000000000000000"
-    const contractType = 0
+    const tokenType = 0
     const amount = 0
     const tokenId = 0
     const pubKey20 = "0x0000000000000000000000000000000000000000"
 
-    const fee = await frens.estimateFee(ZERO_ADDRESS);
+    const fee = await frens.estimateDepositFee(ZERO_ADDRESS);
     const sentValue = ethers.parseEther("0.0123", "ether")
     expect(await frens.getDepositCount()).to.equal(0);
     const [owner] = await ethers.getSigners();
-    const tx = await frens.makeDeposit(tokenAddress, contractType, amount, tokenId, pubKey20, {value: sentValue + fee});
+    const tx = await frens.makeDeposit(tokenType, tokenAddress, amount, tokenId, pubKey20, {value: sentValue + fee});
     const rc = await tx.wait()
     const c = await frens.getDepositCount();
     expect(c).to.equal(1);
     const args = rc.logs[0].args
     expect(args[0]).to.equal(c-BigInt(1));
-    expect(args[1]).to.equal(contractType);
+    expect(args[1]).to.equal(tokenType);
     expect(args[2]).to.equal(tokenAddress);
     expect(args[3]).to.equal(sentValue);
     expect(args[4]).to.equal(owner.address);
@@ -129,26 +122,26 @@ describe("Frens", function () {
     const { erc20 } = await loadFixture(deployERC20);
     const decimals = await erc20.decimals()
     const tokenAddress = erc20.target;
-    const contractType = 1
+    const tokenType = 1
     const amount = BigInt(100) * decimals
     const tokenId = 0
     const pubKey20 = "0x0000000000000000000000000000000000000000"
 
-    const fee = await frens.estimateFee(1);
+    const fee = await frens.estimateDepositFee(1);
     expect(await frens.getDepositCount()).to.equal(0);
 
 
     const [owner] = await ethers.getSigners();
-    await expect(frens.makeDeposit(tokenAddress, contractType, amount, tokenId, pubKey20, {value:fee})).to.be.revertedWith('INSUFFICIENT ALLOWANCE')
+    await expect(frens.makeDeposit(tokenType, tokenAddress, amount, tokenId, pubKey20, {value:fee})).to.be.revertedWith('INSUFFICIENT ALLOWANCE')
 
     await erc20.approve(frens.target, amount, {"from": owner.address})
-    const tx = await frens.makeDeposit(tokenAddress, contractType, amount, tokenId, pubKey20, {value:fee});
+    const tx = await frens.makeDeposit(tokenType, tokenAddress, amount, tokenId, pubKey20, {value:fee});
     const rc = await tx.wait();
     const c = await frens.getDepositCount();
     expect(c).to.equal(1);
     const args = rc.logs[rc.logs.length-1].args
     expect(args[0]).to.equal(c-BigInt(1));
-    expect(args[1]).to.equal(contractType);
+    expect(args[1]).to.equal(tokenType);
     expect(args[2]).to.equal(tokenAddress);
     expect(args[3]).to.equal(amount);
     expect(args[4]).to.equal(owner.address);
@@ -157,37 +150,37 @@ describe("Frens", function () {
   it("Should make bulk deposits", async function () {
     const { frens } = await loadFixture(deployFrens);
     const tokenAddress = "0x0000000000000000000000000000000000000000"
-    const contractType = 0
+    const tokenType = 0
     const amount = 0
     const pubKeys = ["0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000001"]
 
-    const fee = await frens.estimateFee(ZERO_ADDRESS);
+    const fee = await frens.estimateDepositFee(ZERO_ADDRESS);
     const sentValue = ethers.parseEther("0.0124", "ether")
     expect(await frens.getDepositCount()).to.equal(0);
     const [owner] = await ethers.getSigners();
-    const tx = await frens.makeBatchDeposits(tokenAddress, contractType, amount, pubKeys, {value: sentValue + (fee*BigInt(pubKeys.length))});
+    const tx = await frens.makeBatchDeposits(tokenType, tokenAddress, amount, pubKeys, {value: sentValue + (fee*BigInt(pubKeys.length))});
     const rc = await tx.wait()
     const c = await frens.getDepositCount();
     expect(c).to.equal(2);
     for (var log of rc.logs) {
       const args = log.args;
-      expect(args[1]).to.equal(contractType);
+      expect(args[1]).to.equal(tokenType);
       expect(args[2]).to.equal(tokenAddress);
       expect(args[3]).to.equal(sentValue/BigInt(pubKeys.length));
       expect(args[4]).to.equal(owner.address);
     }
 
-    await expect(frens.makeBatchDeposits(tokenAddress, 2, amount, pubKeys, {value: sentValue + (fee*BigInt(pubKeys.length))})).to.be.revertedWith("INVALID CONTRACT TYPE")
+    await expect(frens.makeBatchDeposits(2, tokenAddress, amount, pubKeys, {value: sentValue + (fee*BigInt(pubKeys.length))})).to.be.revertedWith("INVALID CONTRACT TYPE")
   });
 
-  it("Should withdraw sucessfully", async function () {
+  it("Should claim sucessfully", async function () {
     const { frens } = await loadFixture(deployFrens);
     const tokenAddress = "0x0000000000000000000000000000000000000000"
-    const contractType = 0
+    const tokenType = 0
     const amount = 0
     const tokenId = 0
 
-    const fee = await frens.estimateFee(0);
+    const fee = await frens.estimateDepositFee(0);
     const sentValue = ethers.parseEther("0.0123", "ether")
     expect(await frens.getDepositCount()).to.equal(0);
     const [_, sender, receipient, profitReceipient] = await ethers.getSigners();
@@ -196,7 +189,7 @@ describe("Frens", function () {
     const password = "abcxyz"
     const keys = generateKeysFromString(password)
 
-    const tx = await frens.makeDeposit(tokenAddress, contractType, amount, tokenId, keys.address, {value: sentValue + fee});
+    const tx = await frens.makeDeposit(tokenType, tokenAddress, amount, tokenId, keys.address, {value: sentValue + fee});
     const rc = await tx.wait()
     const args = rc.logs[0].args
     const dIndex = args[0]
@@ -207,11 +200,11 @@ describe("Frens", function () {
     const addressHashEIP191 = await ethers.hashMessage(addressHashBinary);
     const signature = await signAddress(addressHashBinary, keys.privateKey);
 
-    const tx1 = await frens.withdrawDeposit(dIndex, receipient.address, addressHashEIP191, signature);
+    const tx1 = await frens.claimDeposit(dIndex, receipient.address, addressHashEIP191, signature);
     const rc1 = await tx1.wait(1)
     const args1 = rc1.logs[0].args
     expect(args1[0]).to.equal(dIndex);
-    expect(args1[1]).to.equal(contractType);
+    expect(args1[1]).to.equal(tokenType);
     expect(args1[2]).to.equal(tokenAddress);
     expect(args1[3]).to.equal(sentValue);
     expect(args1[4]).to.equal(receipient.address);

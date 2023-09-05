@@ -1501,21 +1501,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 _tokenId,
         address _pubKey
     ) private returns (uint256) {
+        require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
         // handle deposit types
         if (_contractType == 0) {
-            require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
             require(_tokenAddress == address(0), "tokenAddress must be zero");
         } else {
             require(_tokenAddress != address(0), "tokenAddress must not be zero");
             if (_contractType == 1) {
-                require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
-                // REMINDER: User must approve this contract to spend the tokens before calling this function
-                // Unfortunately there's no way of doing this in just one transaction.
-                // Wallet abstraction pls
-
                 IERC20 token = IERC20(_tokenAddress);
-
-                // require users token balance to be greater than or equal to the amount being deposited
                 require(
                     token.balanceOf(_msgSender()) >= _amount,
                     "INSUFFICIENT TOKEN BALANCE"
@@ -1542,7 +1535,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                     "Internal transfer"
                 );
             } else if (_contractType == 3) {
-                _amount = 1;
                 IERC1155 token = IERC1155(_tokenAddress);
                 token.safeTransferFrom(
                     _msgSender(),
@@ -1918,8 +1910,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function withdrawProfit(address payable payee) external onlyOwner {
         require(protocolBalance > 0, "No profit");
         payee.transfer(protocolBalance);
-        protocolBalance = 0;
         emit WithdrawnProfit(payee, protocolBalance);
+        protocolBalance = 0;
     }
 
     /**

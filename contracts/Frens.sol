@@ -14,62 +14,43 @@ import "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol";
 
 
 contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
-    uint256 public lockBlocks = 100; // after 100 blocks the deposit sender can withdraw their deposited tokens by them self
+    enum TokenType{ Native, ERC20, ERC721, ERC1155 }
+    uint256 public lockBlocks = 100; 
     address[] public whiteListTokens;
-    bool public allowReceivingNFT = false;
-
-    // Gas & Fee configurations
-    uint256 public constant minGasLimit = 21000 wei;
-    uint256 public constant tokenTransferGasLimit = 100000 wei;
-
-    mapping(uint8 => uint256) public gasLimitPerContractType;
+    
+    mapping(TokenType => uint256) public gasLimitConfigs;
     uint256 public baseGasFee = 0;
     uint256 public priorityGasFee = 0;
+    uint256 public constant minGasLimit = 21000;
 
     uint256 public constant defaultProtocolFee = 0.0005 ether;
-    mapping(uint8 => uint256) public protocolFeePerContractType;
+    mapping(TokenType => uint256) public protocolFeeConfigs;
     uint256 public protocolBalance = 0;
-    // ---------------------------------------- //
 
     struct deposit {
-        address pubKey; // Key to lock the token
-        uint256 amount; // Amount of the token
-        address tokenAddress; // Address of the token. 0x0 for ETH
-        uint8 contractType;  // 0 for eth, 1 for erc20, 2 for erc721, 3 for erc1155
-        uint256 tokenId; // ID of the token if erc721 or erc1155
-        address sender; // Address of the sender
-        uint256 depositedAt; // The block of deposit
+        uint256     tokenAmount; // Amount of the token
+        address     tokenAddress; // Address of the token. 0x0 for ETH
+        TokenType   tokenType;  // TokenType following by the enumations
+        uint256     tokenId; // ID of the token if erc721 or erc1155
+        address     pubKey; // Key to lock the token
+        address     sender; // Address of the sender
+        uint256     blockNo; // The block of deposit
     }
 
     deposit[] public deposits;
 
-    event DepositEvent(
-        uint256 _index,
-        uint8 _contractType,
-        address _tokenAddress,
-        uint256 _amount,
-        address indexed _senderAddress
-    );
-    event WithdrawEvent(
-        uint256 _index,
-        uint8 _contractType,
-        address _tokenAddress,
-        uint256 _amount,
-        address indexed _recipientAddress
-    );
-    event WithdrawnProfit(
-        address indexed payee, 
-        uint256 weiAmount
-    );
+    event DepositEvent(uint256 _index, uint8 _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _sender);
+    event ClaimEvent(uint256 _index, uint8 _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _recipient);
+    event WithdrawEvent(address indexed _payee, uint256 _amount);
 
     constructor(address forwarder) {
         _setTrustedForwarder(forwarder);
         baseGasFee = tx.gasprice;
         priorityGasFee = 0;
-        gasLimitPerContractType[0] = minGasLimit;
-        gasLimitPerContractType[1] = tokenTransferGasLimit;
-        gasLimitPerContractType[2] = tokenTransferGasLimit;
-        gasLimitPerContractType[3] = tokenTransferGasLimit;
+        gasLimitConfigs[TokenType.Native] = minGasLimit;
+        gasLimitConfigs[TokenType.ERC20] = 65000;
+        gasLimitConfigs[TokenType.ERC721] = 300000;
+        gasLimitConfigs[TokenType.ERC1155] = 300000;
     }
 
     function setTrustedForwarder(address _forwarder) external onlyOwner {
@@ -78,10 +59,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
     function setLockBlocks(uint256 _lockBlocks) external onlyOwner {
         lockBlocks = _lockBlocks;
-    }
-
-    function toogleAllowReceivingNFT() external onlyOwner {
-        allowReceivingNFT = !allowReceivingNFT;
     }
 
     function setWhiteListTokens(address[] memory _tokenAddress) external  onlyOwner {
@@ -100,10 +77,10 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         return false;
     }
 
-    function setGasLimit(uint8 _contractType, uint256 _gasLimit) external onlyOwner {
-        require(_contractType < 4, "INVALID CONTRACT TYPE");
+    function setGasLimit(TokenType _tokenType, uint256 _gasLimit) external onlyOwner {
+        require(uint8(_tokenType) < 4, "INVALID CONTRACT TYPE");
         require(_gasLimit >= minGasLimit, "INVALID GAS LIMIT");
-        gasLimitPerContractType[_contractType] = _gasLimit;
+        gasLimitConfigs[_tokenType] = _gasLimit;
     }
 
     function setBaseGasFee(uint256 _baseGasFee) external onlyOwner {
@@ -114,14 +91,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         priorityGasFee = _priorityGasFee;
     }
 
-    function setProtocolFee(uint8 _contractType, uint256 _protocolFee) external onlyOwner {
-        require(_contractType < 4, "INVALID CONTRACT TYPE");
+    function setProtocolFee(TokenType _tokenType, uint256 _protocolFee) external onlyOwner {
+        require(uint8(_tokenType) < 4, "INVALID CONTRACT TYPE");
         require(_protocolFee > 0, "INVALID PROCOL FEE");
-        protocolFeePerContractType[_contractType] = _protocolFee;
+        protocolFeeConfigs[_tokenType] = _protocolFee;
     }
 
-    function estimateGasFeeForWithdrawing(uint8 _contractType) public view returns(uint256) {
-        uint256 gasLimit = gasLimitPerContractType[_contractType];
+    function estimateGasFeeForClaim(TokenType _tokenType) public view returns(uint256) {
+        uint256 gasLimit = gasLimitConfigs[_tokenType];
         if (gasLimit == 0) {
             gasLimit = minGasLimit;
         }
@@ -132,141 +109,146 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         return gasLimit * gasPrice;
     }
 
-    function estimateProtocolFee(uint8 _contractType) public view returns(uint256) {
-        uint256 fee = protocolFeePerContractType[_contractType];
+    function estimateProtocolFee(TokenType _tokenType) public view returns(uint256) {
+        uint256 fee = protocolFeeConfigs[_tokenType];
         if (fee == 0) {
             return defaultProtocolFee;
         }
         return fee;
     }
 
-    function estimateFee(uint8 _contractType) public view returns(uint256) {
-        return estimateProtocolFee(_contractType) + estimateGasFeeForWithdrawing(_contractType);
+    function estimateDepositFee(TokenType _tokenType) public view returns(uint256) {
+        return estimateProtocolFee(_tokenType) + estimateGasFeeForClaim(_tokenType);
     }
 
     function makeDeposit(
+        TokenType _tokenType,
         address _tokenAddress,
-        uint8 _contractType,
-        uint256 _amount,
+        uint256 _tokenAmount,
         uint256 _tokenId,
         address _pubKey
     ) external payable returns (uint256) {
-        require(_contractType < 4, "INVALID CONTRACT TYPE");
+        require(uint8(_tokenType) < 4, "INVALID CONTRACT TYPE");
         require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
+        uint256 _depositFee = estimateDepositFee(_tokenType);
+        require(msg.value >= _depositFee, "NOT ENOUGH PROTOCOL FEE");
 
-        uint256 fee = estimateFee(_contractType);
-        require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
-        if (_contractType == 0) {
-            _amount = msg.value - fee;
-            protocolBalance += fee;
+        if (_tokenType == TokenType.Native) {
+            _tokenAmount = msg.value - _depositFee;
+            require(_tokenAddress == address(0), "tokenAddress must be zero");
+            protocolBalance += _depositFee;
         } else {
+            require(_tokenAddress != address(0), "tokenAddress must not be zero");
             protocolBalance += msg.value;
         }
-        return _makeDeposit(_tokenAddress, _contractType, _amount, _tokenId, _pubKey);
+
+        require(_tokenAmount > 0, "YOU CAN NOT SEND ZERO TOKEN");
+        processDeposit(_tokenType, _tokenAddress, _tokenAmount, _tokenId);
+        return insertDeposit(_tokenType, _tokenAddress, _tokenAmount, _tokenId, _pubKey);
     }
 
-    function _makeDeposit(
+    function processDeposit(
+        TokenType _tokenType,
         address _tokenAddress,
-        uint8 _contractType,
-        uint256 _amount,
+        uint256 _tokenAmount,
+        uint256 _tokenId
+        ) private {
+        if (_tokenType == TokenType.ERC20) {
+            IERC20 token = IERC20(_tokenAddress);
+            require(
+                token.balanceOf(_msgSender()) >= _tokenAmount,
+                "INSUFFICIENT TOKEN BALANCE"
+            );
+            require(
+                token.allowance(_msgSender(), address(this)) >= _tokenAmount,
+                "INSUFFICIENT ALLOWANCE"
+            );
+            require(
+                token.transferFrom(_msgSender(), address(this), _tokenAmount),
+                "TRANSFER FAILED. CHECK ALLOWANCE & BALANCE"
+            );
+        } else if (_tokenType == TokenType.ERC721) {
+            _tokenAmount = 1;
+            IERC721 token = IERC721(_tokenAddress);
+            token.safeTransferFrom(
+                _msgSender(),
+                address(this),
+                _tokenId,
+                "Internal transfer"
+            );
+        } else if (_tokenType == TokenType.ERC1155) {
+            IERC1155 token = IERC1155(_tokenAddress);
+            token.safeTransferFrom(
+                _msgSender(),
+                address(this),
+                _tokenId,
+                _tokenAmount,
+                "Internal transfer"
+            );
+        }
+    }
+
+    function insertDeposit(
+        TokenType _tokenType,
+        address _tokenAddress,
+        uint256 _tokenAmount,
         uint256 _tokenId,
         address _pubKey
     ) private returns (uint256) {
-        require(_amount > 0, "YOU CAN NOT SEND ZERO TOKEN");
-        // handle deposit types
-        if (_contractType == 0) {
-            require(_tokenAddress == address(0), "tokenAddress must be zero");
-        } else {
-            require(_tokenAddress != address(0), "tokenAddress must not be zero");
-            if (_contractType == 1) {
-                IERC20 token = IERC20(_tokenAddress);
-                require(
-                    token.balanceOf(_msgSender()) >= _amount,
-                    "INSUFFICIENT TOKEN BALANCE"
-                );
-
-                // require allowance to be at least the amount being deposited
-                require(
-                    token.allowance(_msgSender(), address(this)) >= _amount,
-                    "INSUFFICIENT ALLOWANCE"
-                );
-
-                // transfer the tokens to the contract
-                require(
-                    token.transferFrom(_msgSender(), address(this), _amount),
-                    "TRANSFER FAILED. CHECK ALLOWANCE & BALANCE"
-                );
-            } else if (_contractType == 2) {
-                _amount = 1;
-                IERC721 token = IERC721(_tokenAddress);
-                token.safeTransferFrom(
-                    _msgSender(),
-                    address(this),
-                    _tokenId,
-                    "Internal transfer"
-                );
-            } else if (_contractType == 3) {
-                IERC1155 token = IERC1155(_tokenAddress);
-                token.safeTransferFrom(
-                    _msgSender(),
-                    address(this),
-                    _tokenId,
-                    _amount,
-                    "Internal transfer"
-                );
-            }
-        }
-
-        // create deposit
+        // add deposit
         deposits.push(
             deposit({
+                tokenType: _tokenType,
                 tokenAddress: _tokenAddress,
-                contractType: _contractType,
-                amount: _amount,
+                tokenAmount: _tokenAmount,
                 tokenId: _tokenId,
                 pubKey: _pubKey,
                 sender: _msgSender(),
-                depositedAt: block.number
+                blockNo: block.number
             })
         );
-
         // emit the deposit event
         emit DepositEvent(
-            deposits.length - 1,
-            _contractType,
+            deposits.length - 1, 
+            uint8(_tokenType),
             _tokenAddress,
-            _amount,
+            _tokenAmount,
             _msgSender()
         );
-
-        // return id of new deposit
         return deposits.length - 1;
     }
 
     function makeBatchDeposits(
+        TokenType _tokenType,
         address _tokenAddress,
-        uint8 _contractType,
-        uint256 _amount,
+        uint256 _tokenAmount,
         address[] memory _pubKeys
-    ) external payable {
+    ) external payable returns (uint256[] memory) {
         require(_pubKeys.length > 0, "pubKeys can not be empty");
-        require(_contractType < 2, "INVALID CONTRACT TYPE");
+        require(uint8(_tokenType) < 2, "INVALID CONTRACT TYPE");
         require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
 
-        uint256 fee = _pubKeys.length * estimateFee(_contractType);
-        require(msg.value >= fee, "NOT ENOUGH PROTOCOL FEE");
-        if (_contractType == 0) {
-            _amount = msg.value - fee;
-            require(_amount > 0, "CAN NOT SENT ZERO TOKEN");
-            protocolBalance += fee;
+        uint256 _depositFee = _pubKeys.length * estimateDepositFee(_tokenType);
+        require(msg.value >= _depositFee, "NOT ENOUGH PROTOCOL FEE");
+
+        if (_tokenType == TokenType.Native) {
+            _tokenAmount = msg.value - _depositFee;
+            require(_tokenAddress == address(0), "tokenAddress must be zero");
+            protocolBalance += _depositFee;
         } else {
+            require(_tokenAddress != address(0), "tokenAddress must not be zero");
             protocolBalance += msg.value;
         }
 
-        uint256 amountPerDeposit = _amount/_pubKeys.length;
+        require(_tokenAmount > 0, "YOU CAN NOT SEND ZERO TOKEN");
+        processDeposit(_tokenType, _tokenAddress, _tokenAmount, 0);
+
+        uint256 amountPerDeposit = _tokenAmount/_pubKeys.length;
+        uint256[] memory depositIndexes = new uint256[](_pubKeys.length);
         for (uint256 i = 0; i< _pubKeys.length; i++) {
-            _makeDeposit(_tokenAddress, _contractType, amountPerDeposit, 0, _pubKeys[i]);
+            depositIndexes[i] = insertDeposit(_tokenType, _tokenAddress, amountPerDeposit, 0, _pubKeys[i]);
         }
+        return depositIndexes;
     }
 
     /**
@@ -284,46 +266,12 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         address _from,
         uint256 _tokenId,
         bytes calldata _data
-    ) external override returns (bytes4) {
+    ) external pure override returns (bytes4) {
         if (keccak256(_data) == keccak256("Internal transfer")) {
-            // if data is "Internal transfer", nothing to do, return
             return this.onERC721Received.selector;
-        } else if (_data.length != 20) {
-            // if data is not 20 bytes, revert (don't want to accept and lock up tokens!)
-            revert("INVALID CALLDATA");
+        } else {
+            revert("NOT ALLOW RECEIVING ERC721");
         }
-        require(allowReceivingNFT, "NOT ALLOW RECEING ERC721");
-
-        // get the params from calldata and make a deposit
-        address _tokenAddress = _msgSender();
-        uint8 _contractType = 2;
-        uint256 _amount = 1;
-        address _pubKey = abi.decode(_data, (address));
-
-        // create deposit
-        deposits.push(
-            deposit({
-                tokenAddress: _tokenAddress,
-                contractType: _contractType,
-                amount: _amount,
-                tokenId: _tokenId,
-                pubKey: _pubKey,
-                sender: _msgSender(),
-                depositedAt: block.number
-            })
-        );
-
-        // emit the deposit event
-        emit DepositEvent(
-            deposits.length - 1,
-            _contractType,
-            _tokenAddress,
-            _amount,
-            _operator
-        );
-
-        // return correct bytes4
-        return this.onERC721Received.selector;
     }
 
     /**
@@ -343,41 +291,13 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 _tokenId,
         uint256 _value,
         bytes calldata _data
-    ) external override returns (bytes4) {
+    ) external pure override returns (bytes4) {
         if (keccak256(_data) == keccak256("Internal transfer")) {
             // if data is "Internal transfer", nothing to do, return
             return this.onERC1155Received.selector;
-        } else if (_data.length != 20) {
-            // if data is not 20 bytes, revert (don't want to accept and lock up tokens!)
-            revert("INVALID CALLDATA");
-        } 
-        require(allowReceivingNFT, "NOT ALLOW RECEING ERC1155");
-
-        // get the params from calldata and make a deposit
-        address _tokenAddress = _msgSender();
-        uint8 _contractType = 3;
-        uint256 _amount = _value;
-        address _pubKey;
-        _pubKey = abi.decode(_data, (address));
-
-        // create deposit
-        deposits.push(
-            deposit({
-                tokenAddress: _tokenAddress,
-                contractType: _contractType,
-                amount: _amount,
-                tokenId: _tokenId,
-                pubKey: _pubKey,
-                sender: _msgSender(),
-                depositedAt: block.number
-            })
-        );
-
-        // emit the deposit event
-        emit DepositEvent(deposits.length - 1, _contractType, _tokenAddress,  _amount, _from);
-
-        // return correct bytes4
-        return this.onERC1155Received.selector;
+        } else {
+            revert("NOT ALLOW RECEIVING ERC721");
+        }
     }
 
     /**
@@ -397,61 +317,17 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256[] calldata _ids,
         uint256[] calldata _values,
         bytes calldata _data
-    ) external override returns (bytes4) {
+    ) external pure override returns (bytes4) {
         if (keccak256(_data) == keccak256("Internal transfer")) {
             // if data is "Internal transfer", nothing to do, return
             return this.onERC1155BatchReceived.selector;
-        } else if (_data.length != (_ids.length * 20)) {
-            // dont accept if data is not 20 bytes per token
-            revert("INVALID CALLDATA");
+        } else {
+            revert("NOT ALLOW RECEIVING ERC721");
         }
-        require(allowReceivingNFT, "NOT ALLOW RECEING ERC1155");
-        // get the params from calldata and make a deposit
-        address _tokenAddress = _msgSender();
-        uint8 _contractType = 4;
-        address _pubKey;
-        uint256 _amount;
-        uint256 _tokenId;
-
-        for (uint256 i = 0; i < _ids.length; i++) {
-            _amount = _values[i];
-            _tokenId = _ids[i];
-            uint256 _offset = i * 20;
-            bytes memory _pubKeyBytes = new bytes(20);
-            for (uint256 j = 0; j < 20; j++) {
-                _pubKeyBytes[j] = _data[_offset + j];
-            }
-            _pubKey = abi.decode(_pubKeyBytes, (address));
-
-            // create deposit
-            deposits.push(
-                deposit({
-                    tokenAddress: _tokenAddress,
-                    contractType: _contractType,
-                    amount: _amount,
-                    tokenId: _tokenId,
-                    pubKey: _pubKey,
-                    sender: _msgSender(),
-                    depositedAt: block.number
-                })
-            );
-
-            // emit the deposit event
-            emit DepositEvent(
-                deposits.length - 1,
-                _contractType,
-                _tokenAddress,
-                _amount,
-                _from
-            );
-        }
-
-        // return correct bytes4
-        return this.onERC1155BatchReceived.selector;
     }
 
     /**
-     * @notice Function to withdraw a deposit. Withdraws the deposit to the recipient address.
+     * @notice Function to claim a deposit. Withdraws the deposit to the recipient address.
      * @dev _recipientAddressHash is hash("\x19Ethereum Signed Message:\n32" + hash(_recipientAddress))
      * @dev The signature should be signed with the private key corresponding to the public key stored in the deposit
      * @dev We don't check the unhashed address for security reasons. It's preferable to sign a hash of the address.
@@ -461,7 +337,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
      * @param _signature bytes signature of the recipient address (65 bytes)
      * @return bool true if successful
      */
-    function withdrawDeposit(
+    function claimDeposit(
         uint256 _index,
         address _recipientAddress,
         bytes32 _recipientAddressHash,
@@ -470,7 +346,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // check that the deposit exists and that it isn't already withdrawn
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
         deposit memory _deposit = deposits[_index];
-        require(_deposit.amount > 0, "DEPOSIT ALREADY WITHDRAWN");
+        require(_deposit.tokenAmount > 0, "DEPOSIT ALREADY WITHDRAWN");
         // check that the recipientAddress hashes to the same value as recipientAddressHash
         require(
             _recipientAddressHash ==
@@ -484,14 +360,14 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         require(depositSigner == _deposit.pubKey, "WRONG SIGNATURE");
 
         // Deposit request is valid. Withdraw the deposit to the recipient address.
-        if (_deposit.contractType == 0) {
+        if (_deposit.tokenType == TokenType.Native) {
             /// handle eth deposits
-            payable(_recipientAddress).transfer(_deposit.amount);
-        } else if (_deposit.contractType == 1) {
+            payable(_recipientAddress).transfer(_deposit.tokenAmount);
+        } else if (_deposit.tokenType == TokenType.ERC20) {
             // handle erc20 deposits
             IERC20 token = IERC20(_deposit.tokenAddress);
-            token.transfer(_recipientAddress, _deposit.amount);
-        } else if (_deposit.contractType == 2) {
+            token.transfer(_recipientAddress, _deposit.tokenAmount);
+        } else if (_deposit.tokenType == TokenType.ERC721) {
             // handle erc721 deposits
             IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
@@ -499,24 +375,24 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                 _recipientAddress,
                 _deposit.tokenId
             );
-        } else if (_deposit.contractType == 3) {
+        } else if (_deposit.tokenType == TokenType.ERC1155) {
             // handle erc1155 deposits
             IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
                 _recipientAddress,
                 _deposit.tokenId,
-                _deposit.amount,
+                _deposit.tokenAmount,
                 ""
             );
         }
 
         // emit the withdraw event
-        emit WithdrawEvent(
+        emit ClaimEvent(
             _index,
-            _deposit.contractType,
+            uint8(_deposit.tokenType),
             _deposit.tokenAddress,
-            _deposit.amount,
+            _deposit.tokenAmount,
             _recipientAddress
         );
 
@@ -527,11 +403,11 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     }
 
     // sender can withdraw deposited assets after some blocks
-    function withdrawSender(uint256 _index) external {
+    function claimBySender(uint256 _index) external {
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
         deposit memory _deposit = deposits[_index];
         require(
-            block.number >= _deposit.depositedAt + lockBlocks ,
+            block.number >= _deposit.blockNo + lockBlocks ,
             "SENDER MUST WAIT AFTER SOME BLOCKS TO WITHDRAW"
         );
         require(
@@ -540,36 +416,36 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         );
 
         // handle eth deposits
-        if (_deposit.contractType == 0) {
+        if (_deposit.tokenType == TokenType.Native) {
             // send eth to sender
-            payable(_msgSender()).transfer(_deposit.amount);
-        } else if (_deposit.contractType == 1) {
+            payable(_msgSender()).transfer(_deposit.tokenAmount);
+        } else if (_deposit.tokenType == TokenType.ERC20) {
             IERC20 token = IERC20(_deposit.tokenAddress);
-            token.transfer(_msgSender(), _deposit.amount);
-        } else if (_deposit.contractType == 2) {
+            token.transfer(_msgSender(), _deposit.tokenAmount);
+        } else if (_deposit.tokenType == TokenType.ERC721) {
             IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
                 address(this),
                 _msgSender(),
                 _deposit.tokenId
             );
-        } else if (_deposit.contractType == 3) {
+        } else if (_deposit.tokenType == TokenType.ERC1155) {
             IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
                 _msgSender(),
                 _deposit.tokenId,
-                _deposit.amount,
+                _deposit.tokenAmount,
                 ""
             );
         }
 
         // emit the withdraw event
-        emit WithdrawEvent(
+        emit ClaimEvent(
             _index,
-            _deposit.contractType,
+            uint8(_deposit.tokenType),
             _deposit.tokenAddress,
-            _deposit.amount,
+            _deposit.tokenAmount,
             _msgSender()
         );
 
@@ -581,7 +457,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function withdrawProfit(address payable payee) external onlyOwner {
         require(protocolBalance > 0, "No profit");
         payee.transfer(protocolBalance);
-        emit WithdrawnProfit(payee, protocolBalance);
+        emit WithdrawEvent(payee, protocolBalance);
         protocolBalance = 0;
     }
 
