@@ -27,7 +27,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     mapping(TokenType => uint256) public protocolFeeConfigs;
     uint256 public protocolBalance = 0;
 
-    struct deposit {
+    struct Deposit {
         uint256     tokenAmount; // Amount of the token
         address     tokenAddress; // Address of the token. 0x0 for ETH
         TokenType   tokenType;  // TokenType following by the enumations
@@ -37,7 +37,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256     blockNo; // The block of deposit
     }
 
-    deposit[] public deposits;
+    Deposit[] public deposits;
 
     event DepositEvent(uint256 _index, uint8 _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _sender);
     event ClaimEvent(uint256 _index, uint8 _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _recipient);
@@ -197,7 +197,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     ) private returns (uint256) {
         // add deposit
         deposits.push(
-            deposit({
+            Deposit({
                 tokenType: _tokenType,
                 tokenAddress: _tokenAddress,
                 tokenAmount: _tokenAmount,
@@ -345,7 +345,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     ) external returns (bool) {
         // check that the deposit exists and that it isn't already withdrawn
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
-        deposit memory _deposit = deposits[_index];
+        Deposit memory _deposit = deposits[_index];
         require(_deposit.tokenAmount > 0, "DEPOSIT ALREADY WITHDRAWN");
         // check that the recipientAddress hashes to the same value as recipientAddressHash
         require(
@@ -405,7 +405,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     // sender can withdraw deposited assets after some blocks
     function claimBySender(uint256 _index) external {
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
-        deposit memory _deposit = deposits[_index];
+        Deposit memory _deposit = deposits[_index];
         require(
             block.number >= _deposit.blockNo + lockBlocks ,
             "SENDER MUST WAIT AFTER SOME BLOCKS TO WITHDRAW"
@@ -513,5 +513,17 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function _msgData() internal view override(Context, ERC2771Recipient)
         returns (bytes calldata) {
         return ERC2771Recipient._msgData();
+    }
+
+    function getDepositsByAddress(address _address) external view returns (Deposit[] memory) {
+        Deposit[] memory _deposits = new Deposit[](deposits.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < deposits.length; i++) {
+            if (deposits[i].sender == _address) {
+                _deposits[count] = deposits[i];
+                count++;
+            }
+        }
+        return _deposits;
     }
 }
