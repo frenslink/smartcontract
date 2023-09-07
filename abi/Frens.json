@@ -22,7 +22,7 @@
       {
         "indexed": false,
         "internalType": "uint8",
-        "name": "_contractType",
+        "name": "_tokenType",
         "type": "uint8"
       },
       {
@@ -34,13 +34,50 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "_amount",
+        "name": "_tokenAmount",
         "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "address",
-        "name": "_senderAddress",
+        "name": "_recipient",
+        "type": "address"
+      }
+    ],
+    "name": "ClaimEvent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "_tokenType",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_tokenAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_sender",
         "type": "address"
       }
     ],
@@ -70,21 +107,9 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "_index",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "_contractType",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
-        "name": "_tokenAddress",
+        "name": "_payee",
         "type": "address"
       },
       {
@@ -92,48 +117,10 @@
         "internalType": "uint256",
         "name": "_amount",
         "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "_recipientAddress",
-        "type": "address"
       }
     ],
     "name": "WithdrawEvent",
     "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "payee",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "weiAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "WithdrawnProfit",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "allowReceivingNFT",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
   },
   {
     "inputs": [],
@@ -146,6 +133,53 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimBySender",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_recipientAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_recipientAddressHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "claimDeposit",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -172,13 +206,8 @@
     "name": "deposits",
     "outputs": [
       {
-        "internalType": "address",
-        "name": "pubKey",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "tokenAmount",
         "type": "uint256"
       },
       {
@@ -187,8 +216,8 @@
         "type": "address"
       },
       {
-        "internalType": "uint8",
-        "name": "contractType",
+        "internalType": "enum Frens.TokenType",
+        "name": "tokenType",
         "type": "uint8"
       },
       {
@@ -198,12 +227,17 @@
       },
       {
         "internalType": "address",
+        "name": "pubKey",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "depositedAt",
+        "name": "blockNo",
         "type": "uint256"
       }
     ],
@@ -213,12 +247,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "_contractType",
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
         "type": "uint8"
       }
     ],
-    "name": "estimateFee",
+    "name": "estimateDepositFee",
     "outputs": [
       {
         "internalType": "uint256",
@@ -232,12 +266,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "_contractType",
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
         "type": "uint8"
       }
     ],
-    "name": "estimateGasFeeForWithdrawing",
+    "name": "estimateGasFeeForClaim",
     "outputs": [
       {
         "internalType": "uint256",
@@ -251,8 +285,8 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "_contractType",
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
         "type": "uint8"
       }
     ],
@@ -270,12 +304,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
+        "internalType": "enum Frens.TokenType",
         "name": "",
         "type": "uint8"
       }
     ],
-    "name": "gasLimitPerContractType",
+    "name": "gasLimitConfigs",
     "outputs": [
       {
         "internalType": "uint256",
@@ -294,6 +328,62 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_address",
+        "type": "address"
+      }
+    ],
+    "name": "getDepositsByAddress",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "tokenAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "enum Frens.TokenType",
+            "name": "tokenType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "pubKey",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "blockNo",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Frens.Deposit[]",
+        "name": "",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -366,18 +456,18 @@
   {
     "inputs": [
       {
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
+        "type": "uint8"
+      },
+      {
         "internalType": "address",
         "name": "_tokenAddress",
         "type": "address"
       },
       {
-        "internalType": "uint8",
-        "name": "_contractType",
-        "type": "uint8"
-      },
-      {
         "internalType": "uint256",
-        "name": "_amount",
+        "name": "_tokenAmount",
         "type": "uint256"
       },
       {
@@ -387,25 +477,31 @@
       }
     ],
     "name": "makeBatchDeposits",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
       {
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
+        "type": "uint8"
+      },
+      {
         "internalType": "address",
         "name": "_tokenAddress",
         "type": "address"
       },
       {
-        "internalType": "uint8",
-        "name": "_contractType",
-        "type": "uint8"
-      },
-      {
         "internalType": "uint256",
-        "name": "_amount",
+        "name": "_tokenAmount",
         "type": "uint256"
       },
       {
@@ -479,7 +575,7 @@
         "type": "bytes4"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -518,7 +614,7 @@
         "type": "bytes4"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -552,7 +648,7 @@
         "type": "bytes4"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -597,12 +693,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
+        "internalType": "enum Frens.TokenType",
         "name": "",
         "type": "uint8"
       }
     ],
-    "name": "protocolFeePerContractType",
+    "name": "protocolFeeConfigs",
     "outputs": [
       {
         "internalType": "uint256",
@@ -636,8 +732,8 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "_contractType",
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
         "type": "uint8"
       },
       {
@@ -680,8 +776,8 @@
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "_contractType",
+        "internalType": "enum Frens.TokenType",
+        "name": "_tokenType",
         "type": "uint8"
       },
       {
@@ -741,26 +837,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "tokenTransferGasLimit",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "toogleAllowReceivingNFT",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -795,59 +871,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_index",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_recipientAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_recipientAddressHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_signature",
-        "type": "bytes"
-      }
-    ],
-    "name": "withdrawDeposit",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address payable",
         "name": "payee",
         "type": "address"
       }
     ],
     "name": "withdrawProfit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_index",
-        "type": "uint256"
-      }
-    ],
-    "name": "withdrawSender",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
