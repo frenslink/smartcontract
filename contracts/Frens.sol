@@ -53,14 +53,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         gasLimitConfigs[TokenType.ERC1155] = 300000;
     }
 
-    function getGasPrice() public view returns (uint256) {
-        uint256 gasPrice;
-        assembly {
-            gasPrice := gasprice()
-        }
-        return gasPrice;
-    }
-
     function setTrustedForwarder(address _forwarder) external onlyOwner {
         _setTrustedForwarder(_forwarder);
     }
