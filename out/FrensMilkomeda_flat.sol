@@ -1374,7 +1374,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
 
     constructor(address forwarder) {
         _setTrustedForwarder(forwarder);
-        baseGasFee = tx.gasprice;
+        baseGasFee = 40 gwei;
         priorityGasFee = 0;
         gasLimitConfigs[TokenType.Native] = minGasLimit;
         gasLimitConfigs[TokenType.ERC20] = 65000;
@@ -1440,9 +1440,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             gasLimit = minGasLimit;
         }
         uint256 gasPrice = baseGasFee + priorityGasFee;
-        if (gasPrice < tx.gasprice) {
-            gasPrice = tx.gasprice;
-        }
         return gasLimit * gasPrice;
     }
 
