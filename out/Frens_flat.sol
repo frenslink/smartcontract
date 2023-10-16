@@ -1355,6 +1355,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     uint256 public constant defaultProtocolFee = 0.0005 ether;
     mapping(TokenType => uint256) public protocolFeeConfigs;
     uint256 public protocolBalance = 0;
+    uint256 public maxBatchLinks = 100;
 
     struct Deposit {
         uint256     tokenAmount; // Amount of the token
@@ -1424,6 +1425,10 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         require(uint8(_tokenType) < 4, "INVALID CONTRACT TYPE");
         require(_protocolFee > 0, "INVALID PROCOL FEE");
         protocolFeeConfigs[_tokenType] = _protocolFee;
+    }
+
+    function setMaxBatchLinks(uint256 _maxBatchLinks) external onlyOwner {
+        maxBatchLinks = _maxBatchLinks;
     }
 
     function estimateGasFeeForClaim(TokenType _tokenType) public view returns(uint256) {
@@ -1554,6 +1559,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         address[] memory _pubKeys
     ) external payable returns (uint256[] memory) {
         require(_pubKeys.length > 0, "pubKeys can not be empty");
+        require(_pubKeys.length <= maxBatchLinks, "pubKeys maximum reached");
         require(uint8(_tokenType) < 2, "INVALID CONTRACT TYPE");
         require(isAllowDepositToken(_tokenAddress), "TokenAddress is not allowed");
 
