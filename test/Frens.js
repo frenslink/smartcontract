@@ -9,7 +9,7 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 describe("Frens", function () {
   async function deployFrens() {
-    const frens = await ethers.deployContract("Frens", [ZERO_ADDRESS]);
+    const frens = await ethers.deployContract("contracts/Frens.sol:Frens", [ZERO_ADDRESS]);
 
     return { frens };
   }

@@ -200,6 +200,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 _tokenId,
         address _pubKey
     ) private returns (uint256) {
+        address _sender = _msgSender();
         // add deposit
         deposits.push(
             Deposit({
@@ -208,7 +209,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                 tokenAmount: _tokenAmount,
                 tokenId: _tokenId,
                 pubKey: _pubKey,
-                sender: _msgSender(),
+                sender: _sender,
                 blockNo: block.number
             })
         );
@@ -218,7 +219,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             uint8(_tokenType),
             _tokenAddress,
             _tokenAmount,
-            _msgSender()
+            _sender
         );
         return deposits.length - 1;
     }
