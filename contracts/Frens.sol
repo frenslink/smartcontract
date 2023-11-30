@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -10,17 +11,24 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@opengsn/contracts/src/ERC2771Recipient.sol";
 import "@opengsn/contracts/src/interfaces/IERC2771Recipient.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
+contract Frens is 
+    IERC721Receiver, 
+    IERC1155Receiver, 
+    ERC2771Recipient, 
+    ReentrancyGuard, 
+    Ownable 
+    {
+    using SafeERC20 for IERC20;
 
-contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     enum TokenType{ Native, ERC20, ERC721, ERC1155 }
     uint256 public lockBlocks = 100; 
     address[] public whiteListTokens;
     
     mapping(TokenType => uint256) public gasLimitConfigs;
-    uint256 public baseGasFee = 0;
-    uint256 public priorityGasFee = 0;
+    uint256 public gasPrice = 0;
     uint256 public constant minGasLimit = 21000;
 
     uint256 public constant defaultProtocolFee = 0.0005 ether;
@@ -36,18 +44,20 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         address     pubKey; // Key to lock the token
         address     sender; // Address of the sender
         uint256     blockNo; // The block of deposit
+        bool        claimed;  // indicates this deposit been claimed
     }
 
     Deposit[] public deposits;
 
-    event DepositEvent(uint256 _index, uint8 _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _sender);
-    event ClaimEvent(uint256 _index, uint8 _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _recipient);
+    event DepositEvent(uint256 indexed _index, uint8 indexed _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _sender);
+    event ClaimEvent(uint256 indexed _index, uint8 indexed _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _recipient);
+    event ClaimCrossChainEvent(uint256 indexed _index, uint8 indexed _tokenType, uint256 _tokenAmount, uint256 _fee, address indexed _recipientAddress, bytes callResult);
     event WithdrawEvent(address indexed _payee, uint256 _amount);
+
 
     constructor(address forwarder) {
         _setTrustedForwarder(forwarder);
-        baseGasFee = tx.gasprice;
-        priorityGasFee = 0;
+        gasPrice = 40 gwei;
         gasLimitConfigs[TokenType.Native] = minGasLimit;
         gasLimitConfigs[TokenType.ERC20] = 65000;
         gasLimitConfigs[TokenType.ERC721] = 300000;
@@ -84,12 +94,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         gasLimitConfigs[_tokenType] = _gasLimit;
     }
 
-    function setBaseGasFee(uint256 _baseGasFee) external onlyOwner {
-        baseGasFee = _baseGasFee;
-    }
-
-    function setPriorityGasFee(uint256 _priorityGasFee) external onlyOwner {
-        priorityGasFee = _priorityGasFee;
+    function setGasPrice(uint256 _gasPrice) external onlyOwner {
+        gasPrice = _gasPrice;
     }
 
     function setProtocolFee(TokenType _tokenType, uint256 _protocolFee) external onlyOwner {
@@ -106,10 +112,6 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         uint256 gasLimit = gasLimitConfigs[_tokenType];
         if (gasLimit == 0) {
             gasLimit = minGasLimit;
-        }
-        uint256 gasPrice = baseGasFee + priorityGasFee;
-        if (gasPrice < tx.gasprice) {
-            gasPrice = tx.gasprice;
         }
         return gasLimit * gasPrice;
     }
@@ -210,7 +212,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
                 tokenId: _tokenId,
                 pubKey: _pubKey,
                 sender: _sender,
-                blockNo: block.number
+                blockNo: block.number,
+                claimed: false
             })
         );
         // emit the deposit event
@@ -353,7 +356,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         // check that the deposit exists and that it isn't already withdrawn
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
         Deposit memory _deposit = deposits[_index];
-        require(_deposit.tokenAmount > 0, "DEPOSIT ALREADY WITHDRAWN");
+        require(_deposit.claimed == false, "DEPOSIT ALREADY WITHDRAWN");
         // check that the recipientAddress hashes to the same value as recipientAddressHash
         require(
             _recipientAddressHash ==
@@ -363,8 +366,7 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             "HASHES DO NOT MATCH"
         );
         // check that the signer is the same as the one stored in the deposit
-        address depositSigner = getSigner(_recipientAddressHash, _signature);
-        require(depositSigner == _deposit.pubKey, "WRONG SIGNATURE");
+        require(verifySignature(_recipientAddressHash, _signature, _deposit.pubKey), "WRONG SIGNATURE");
 
         // Deposit request is valid. Withdraw the deposit to the recipient address.
         if (_deposit.tokenType == TokenType.Native) {
@@ -403,9 +405,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             _recipientAddress
         );
 
-        // delete the deposit
-        delete deposits[_index];
-
+        // set deposit as claimed
+        deposits[_index].claimed = true;
         return true;
     }
 
@@ -413,14 +414,9 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function claimBySender(uint256 _index) external {
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
         Deposit memory _deposit = deposits[_index];
-        require(
-            block.number >= _deposit.blockNo + lockBlocks ,
-            "SENDER MUST WAIT AFTER SOME BLOCKS TO WITHDRAW"
-        );
-        require(
-            _deposit.sender == _msgSender(),
-            "MUST BE SENDER TO WITHDRAW"
-        );
+        require(block.number >= _deposit.blockNo + lockBlocks ,"SENDER MUST WAIT AFTER SOME BLOCKS TO WITHDRAW");
+        require(_deposit.sender == _msgSender(),"MUST BE SENDER TO WITHDRAW");
+        require(_deposit.claimed == false, "DEPOSIT ALREADY WITHDRAWN");
 
         // handle eth deposits
         if (_deposit.tokenType == TokenType.Native) {
@@ -456,8 +452,8 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
             _msgSender()
         );
 
-        // delete the deposit
-        delete deposits[_index];
+        // set deposit as claimed
+        deposits[_index].claimed = true;
     }
 
 
@@ -468,29 +464,74 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
         protocolBalance = 0;
     }
 
-    /**
-     * @notice Gets the signer of a messageHash. Used for signature verification.
-     * @dev Uses ECDSA.recover. On Frontend, use secp256k1 to sign the messageHash
-     * @dev also remember to prepend the messageHash with "\x19Ethereum Signed Message:\n32"
-     * @param messageHash bytes32 hash of the message
-     * @param signature bytes signature of the message
-     * @return address of the signer
-     */
-    function getSigner(bytes32 messageHash, bytes memory signature)
-        internal
-        pure
-        returns (address)
-    {
-        address signer = ECDSA.recover(messageHash, signature);
-        return signer;
+    function claimWithXChain(
+        uint256 _index, // depositIdx
+        address _recipientAddress, // recipient address
+        bytes memory _squidData, // route.transactionRequest.data
+        uint256 _squidValue, // route.transactionRequest.value
+        address _squidRouter, // route.transactionRequest.targetAddress
+        bytes32 _hash, // hashEIP191
+        bytes memory _signature // signature
+    ) external payable nonReentrant returns (bool) {
+        require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
+        Deposit memory _deposit = deposits[_index];
+        require(_deposit.claimed == false, "DEPOSIT ALREADY WITHDRAWN");
+        require(uint8(_deposit.tokenType) < 2, "NO SUPPORTED CONTRACT TYPE");
+
+        // Hash verification
+        require(keccak256(abi.encodePacked(_recipientAddress, _squidRouter, _squidData, _squidValue)) == _hash, "HASHES DO NOT MATCH");
+        // Signature verification
+        require(verifySignature(ECDSA.toEthSignedMessageHash(_hash), _signature, _deposit.pubKey), "WRONG SIGNATURE");
+        // execute the cross-chain transfer
+
+        bool success = false;
+        bytes memory callResult;
+        if (_deposit.tokenType == TokenType.Native) {
+            uint256 feeAmount = _squidValue - _deposit.tokenAmount;
+            require(msg.value >= feeAmount, "INSUFFICIENT FEE SENT");
+            uint256 amountToSend = _deposit.tokenAmount + msg.value;
+            require(amountToSend >= _squidValue, "INSUFFICIENT PAYMENT");
+            (success, callResult) = payable(_squidRouter).call{value: amountToSend}(_squidData);
+
+            emit ClaimCrossChainEvent(
+                _index, uint8(_deposit.tokenType), _deposit.tokenAmount, feeAmount, _recipientAddress, callResult
+            );
+        } else if (_deposit.tokenType == TokenType.ERC20) {
+            require(msg.value >= _squidValue, "INSUFFICIENT PAYMENT");
+            // for ERC20 tokens this value is needed as this pays for the execution
+            IERC20 token = IERC20(_deposit.tokenAddress);
+            token.approve(_squidRouter, _deposit.tokenAmount);
+            (success, callResult) = payable(_squidRouter).call{value: _squidValue}(_squidData);
+
+            emit ClaimCrossChainEvent(
+                _index, uint8(_deposit.tokenType), _deposit.tokenAmount, _squidValue, _recipientAddress, callResult
+            );
+        }
+        require(success, "FAILED TO CLAIM OVER CROSS CHAIN");
+
+        // set deposit as claimed
+        deposits[_index].claimed = true;
+        return true;
     }
 
-    /**
-     * @notice Simple way to get the total number of deposits
-     * @return uint256 number of deposits
-     */
+    function verifySignature(bytes32 data, bytes memory signature, address signer) public pure returns (bool) {
+        return ECDSA.recover(data, signature) == signer;
+    }
+
     function getDepositCount() external view returns (uint256) {
         return deposits.length;
+    }
+
+    function getDepositsByAddress(address _address) external view returns (Deposit[] memory) {
+        Deposit[] memory _deposits = new Deposit[](deposits.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < deposits.length; i++) {
+            if (deposits[i].sender == _address) {
+                _deposits[count] = deposits[i];
+                count++;
+            }
+        }
+        return _deposits;
     }
 
     /**
@@ -520,17 +561,5 @@ contract Frens is IERC721Receiver, IERC1155Receiver, ERC2771Recipient, Ownable {
     function _msgData() internal view override(Context, ERC2771Recipient)
         returns (bytes calldata) {
         return ERC2771Recipient._msgData();
-    }
-
-    function getDepositsByAddress(address _address) external view returns (Deposit[] memory) {
-        Deposit[] memory _deposits = new Deposit[](deposits.length);
-        uint256 count = 0;
-        for (uint256 i = 0; i < deposits.length; i++) {
-            if (deposits[i].sender == _address) {
-                _deposits[count] = deposits[i];
-                count++;
-            }
-        }
-        return _deposits;
     }
 }

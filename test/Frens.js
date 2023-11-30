@@ -51,18 +51,11 @@ describe("Frens", function () {
     expect(await frens.estimateProtocolFee(0)).to.equal(newEther);
   });
 
-  it("Should set the right baseGasFee", async function () {
+  it("Should set the right gasPrice", async function () {
     const { frens } = await loadFixture(deployFrens);
-    expect(await frens.baseGasFee()).to.greaterThan(0);
-    await frens.setBaseGasFee(10000);
-    expect(await frens.baseGasFee()).to.equal(10000);
-  });
-
-  it("Should set the right priorityGasFee", async function () {
-    const { frens } = await loadFixture(deployFrens);
-    expect(await frens.priorityGasFee()).to.equal(0);
-    await frens.setPriorityGasFee(10000);
-    expect(await frens.priorityGasFee()).to.equal(10000);
+    expect(await frens.gasPrice()).to.greaterThan(0);
+    await frens.setGasPrice(10000);
+    expect(await frens.gasPrice()).to.equal(10000);
   });
 
   it("Should estimate right fee", async function () {
