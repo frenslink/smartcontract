@@ -213,7 +213,7 @@ describe("Frens", function () {
     const b3 = await ethers.provider.getBalance(profitReceipient.address)
     expect(b3).to.equal(b2+fee);
   });
-
+  
 
 });
 
