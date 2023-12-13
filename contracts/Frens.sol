@@ -370,12 +370,12 @@ contract Frens is
 
         // Deposit request is valid. Withdraw the deposit to the recipient address.
         if (_deposit.tokenType == TokenType.Native) {
-            /// handle eth deposits
-            payable(_recipientAddress).transfer(_deposit.tokenAmount);
+            (bool success,) = _recipientAddress.call{value: _deposit.tokenAmount}("");
+            require(success, "Failed to transfer native token");
         } else if (_deposit.tokenType == TokenType.ERC20) {
             // handle erc20 deposits
             IERC20 token = IERC20(_deposit.tokenAddress);
-            token.transfer(_recipientAddress, _deposit.tokenAmount);
+            token.safeTransfer(_recipientAddress, _deposit.tokenAmount);
         } else if (_deposit.tokenType == TokenType.ERC721) {
             // handle erc721 deposits
             IERC721 token = IERC721(_deposit.tokenAddress);
