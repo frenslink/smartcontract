@@ -2210,27 +2210,18 @@ contract Frens is
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
         Deposit memory _deposit = deposits[_index];
         require(_deposit.claimed == false, "DEPOSIT ALREADY WITHDRAWN");
-        // check that the recipientAddress hashes to the same value as recipientAddressHash
-        require(
-            _recipientAddressHash ==
-                ECDSA.toEthSignedMessageHash(
-                    keccak256(abi.encodePacked(_recipientAddress))
-                ),
-            "HASHES DO NOT MATCH"
-        );
-        // check that the signer is the same as the one stored in the deposit
-        require(verifySignature(_recipientAddressHash, _signature, _deposit.pubKey), "WRONG SIGNATURE");
+
+        verifyHash(keccak256(abi.encodePacked(_recipientAddress)), _recipientAddressHash);
+        verifySignature(_recipientAddressHash, _signature, _deposit.pubKey);
 
         // Deposit request is valid. Withdraw the deposit to the recipient address.
         if (_deposit.tokenType == TokenType.Native) {
             (bool success,) = _recipientAddress.call{value: _deposit.tokenAmount}("");
             require(success, "Failed to transfer native token");
         } else if (_deposit.tokenType == TokenType.ERC20) {
-            // handle erc20 deposits
             IERC20 token = IERC20(_deposit.tokenAddress);
             token.safeTransfer(_recipientAddress, _deposit.tokenAmount);
         } else if (_deposit.tokenType == TokenType.ERC721) {
-            // handle erc721 deposits
             IERC721 token = IERC721(_deposit.tokenAddress);
             token.transferFrom(
                 address(this),
@@ -2238,7 +2229,6 @@ contract Frens is
                 _deposit.tokenId
             );
         } else if (_deposit.tokenType == TokenType.ERC1155) {
-            // handle erc1155 deposits
             IERC1155 token = IERC1155(_deposit.tokenAddress);
             token.safeTransferFrom(
                 address(this),
@@ -2273,7 +2263,6 @@ contract Frens is
 
         // handle eth deposits
         if (_deposit.tokenType == TokenType.Native) {
-            // send eth to sender
             payable(_msgSender()).transfer(_deposit.tokenAmount);
         } else if (_deposit.tokenType == TokenType.ERC20) {
             IERC20 token = IERC20(_deposit.tokenAddress);
@@ -2317,26 +2306,28 @@ contract Frens is
         protocolBalance = 0;
     }
 
-    function claimWithXChain(
-        uint256 _index, // depositIdx
-        address _recipientAddress, // recipient address
-        bytes memory _squidData, // route.transactionRequest.data
-        uint256 _squidValue, // route.transactionRequest.value
-        address _squidRouter, // route.transactionRequest.targetAddress
-        bytes32 _hash, // hashEIP191
-        bytes memory _signature // signature
+
+    /**
+     * @notice Claim cross-chain through Squid
+     */
+    function claimCrossChain(
+        uint256 _index,
+        address _recipientAddress, 
+        bytes memory _squidData,
+        uint256 _squidValue,
+        address _squidRouter,
+        bytes32 _hash,
+        bytes memory _signature
     ) external payable nonReentrant returns (bool) {
         require(_index < deposits.length, "DEPOSIT INDEX DOES NOT EXIST");
         Deposit memory _deposit = deposits[_index];
         require(_deposit.claimed == false, "DEPOSIT ALREADY WITHDRAWN");
         require(uint8(_deposit.tokenType) < 2, "NO SUPPORTED CONTRACT TYPE");
 
-        // Hash verification
-        require(keccak256(abi.encodePacked(_recipientAddress, _squidRouter, _squidData, _squidValue)) == _hash, "HASHES DO NOT MATCH");
-        // Signature verification
-        require(verifySignature(ECDSA.toEthSignedMessageHash(_hash), _signature, _deposit.pubKey), "WRONG SIGNATURE");
-        // execute the cross-chain transfer
+        verifyHash(keccak256(abi.encodePacked(_recipientAddress, _squidRouter, _squidData, _squidValue)), _hash);
+        verifySignature(_hash, _signature, _deposit.pubKey);
 
+        // execute the cross-chain transfer
         bool success = false;
         bytes memory callResult;
         if (_deposit.tokenType == TokenType.Native) {
@@ -2365,10 +2356,6 @@ contract Frens is
         // set deposit as claimed
         deposits[_index].claimed = true;
         return true;
-    }
-
-    function verifySignature(bytes32 data, bytes memory signature, address signer) public pure returns (bool) {
-        return ECDSA.recover(data, signature) == signer;
     }
 
     function getDepositCount() external view returns (uint256) {
@@ -2414,6 +2401,16 @@ contract Frens is
     function _msgData() internal view override(Context, ERC2771Recipient)
         returns (bytes calldata) {
         return ERC2771Recipient._msgData();
+    }
+
+    function verifyHash(bytes32 _message ,bytes32 _messageHash) public pure returns (bool)  {
+        require(ECDSA.toEthSignedMessageHash(_message) == _messageHash,"HASHES DO NOT MATCH");
+        return true;
+    }
+
+    function verifySignature(bytes32 _hash, bytes memory signature, address signer) public pure returns (bool) {
+        require(ECDSA.recover(_hash, signature) == signer, "WRONG SIGNATURE");
+        return true;
     }
 }
 

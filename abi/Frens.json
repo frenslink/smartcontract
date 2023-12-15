@@ -191,40 +191,6 @@
         "type": "address"
       },
       {
-        "internalType": "bytes32",
-        "name": "_recipientAddressHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_signature",
-        "type": "bytes"
-      }
-    ],
-    "name": "claimDeposit",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_index",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_recipientAddress",
-        "type": "address"
-      },
-      {
         "internalType": "bytes",
         "name": "_squidData",
         "type": "bytes"
@@ -250,7 +216,7 @@
         "type": "bytes"
       }
     ],
-    "name": "claimWithXChain",
+    "name": "claimCrossChain",
     "outputs": [
       {
         "internalType": "bool",
@@ -259,6 +225,40 @@
       }
     ],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_recipientAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_recipientAddressHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "claimDeposit",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -955,7 +955,31 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "data",
+        "name": "_message",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_messageHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "verifyHash",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_hash",
         "type": "bytes32"
       },
       {
