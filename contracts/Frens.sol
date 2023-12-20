@@ -513,13 +513,14 @@ contract Frens is
         Deposit[] memory _deposits = new Deposit[](deposits.length);
         uint256 count = 0;
         for (uint256 i = 0; i < deposits.length; i++) {
-            if (deposits[i].sender == _address) {
+            if (deposits[i].sender == _address && !deposits[i].claimed) {
                 _deposits[count] = deposits[i];
                 count++;
             }
         }
         return _deposits;
     }
+
 
     /**
         @notice supportsInterface function
