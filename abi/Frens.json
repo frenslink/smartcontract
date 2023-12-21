@@ -14,13 +14,56 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "_index",
         "type": "uint256"
       },
       {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "_tokenType",
+        "type": "uint8"
+      },
+      {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "_tokenAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_fee",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_recipientAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "callResult",
+        "type": "bytes"
+      }
+    ],
+    "name": "ClaimCrossChainEvent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
         "internalType": "uint8",
         "name": "_tokenType",
         "type": "uint8"
@@ -51,13 +94,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "_index",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint8",
         "name": "_tokenType",
         "type": "uint8"
@@ -123,19 +166,6 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "baseGasFee",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -146,6 +176,55 @@
     "name": "claimBySender",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_index",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_recipientAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_squidData",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_squidValue",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_squidRouter",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_hash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "claimCrossChain",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -239,6 +318,11 @@
         "internalType": "uint256",
         "name": "blockNo",
         "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "claimed",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -322,6 +406,19 @@
   },
   {
     "inputs": [],
+    "name": "gasPrice",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getDepositCount",
     "outputs": [
       {
@@ -379,6 +476,11 @@
             "internalType": "uint256",
             "name": "blockNo",
             "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "claimed",
+            "type": "bool"
           }
         ],
         "internalType": "struct Frens.Deposit[]",
@@ -528,6 +630,19 @@
   },
   {
     "inputs": [],
+    "name": "maxBatchLinks",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "minGasLimit",
     "outputs": [
       {
@@ -666,19 +781,6 @@
   },
   {
     "inputs": [],
-    "name": "priorityGasFee",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "protocolBalance",
     "outputs": [
       {
@@ -719,19 +821,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_baseGasFee",
-        "type": "uint256"
-      }
-    ],
-    "name": "setBaseGasFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "enum Frens.TokenType",
         "name": "_tokenType",
         "type": "uint8"
@@ -743,6 +832,19 @@
       }
     ],
     "name": "setGasLimit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_gasPrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "setGasPrice",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -764,11 +866,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_priorityGasFee",
+        "name": "_maxBatchLinks",
         "type": "uint256"
       }
     ],
-    "name": "setPriorityGasFee",
+    "name": "setMaxBatchLinks",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -847,6 +949,59 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_message",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_messageHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "verifyHash",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_hash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      }
+    ],
+    "name": "verifySignature",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
