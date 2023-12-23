@@ -51,7 +51,7 @@ contract Frens is
 
     event DepositEvent(uint256 indexed _index, uint8 indexed _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _sender);
     event ClaimEvent(uint256 indexed _index, uint8 indexed _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _recipient);
-    event ClaimCrossChainEvent(uint256 indexed _index, uint8 indexed _tokenType, uint256 _tokenAmount, uint256 _fee, address indexed _recipientAddress, bytes callResult);
+    event ClaimCrossChainEvent(uint256 indexed _index, uint8 indexed _tokenType, address _tokenAddress, uint256 _tokenAmount, address indexed _recipient, uint256 _fee, bytes callResult);
     event WithdrawEvent(address indexed _payee, uint256 _amount);
 
 
@@ -370,30 +370,15 @@ contract Frens is
             token.safeTransfer(_recipientAddress, _deposit.tokenAmount);
         } else if (_deposit.tokenType == TokenType.ERC721) {
             IERC721 token = IERC721(_deposit.tokenAddress);
-            token.transferFrom(
-                address(this),
-                _recipientAddress,
-                _deposit.tokenId
+            token.transferFrom(address(this), _recipientAddress,  _deposit.tokenId
             );
         } else if (_deposit.tokenType == TokenType.ERC1155) {
             IERC1155 token = IERC1155(_deposit.tokenAddress);
-            token.safeTransferFrom(
-                address(this),
-                _recipientAddress,
-                _deposit.tokenId,
-                _deposit.tokenAmount,
-                ""
-            );
+            token.safeTransferFrom( address(this), _recipientAddress,_deposit.tokenId,_deposit.tokenAmount, "");
         }
 
         // emit the withdraw event
-        emit ClaimEvent(
-            _index,
-            uint8(_deposit.tokenType),
-            _deposit.tokenAddress,
-            _deposit.tokenAmount,
-            _recipientAddress
-        );
+        emit ClaimEvent( _index,  uint8(_deposit.tokenType), _deposit.tokenAddress, _deposit.tokenAmount, _recipientAddress);
 
         // set deposit as claimed
         deposits[_index].claimed = true;
@@ -416,30 +401,15 @@ contract Frens is
             token.transfer(_msgSender(), _deposit.tokenAmount);
         } else if (_deposit.tokenType == TokenType.ERC721) {
             IERC721 token = IERC721(_deposit.tokenAddress);
-            token.transferFrom(
-                address(this),
-                _msgSender(),
-                _deposit.tokenId
+            token.transferFrom(address(this), _msgSender(), _deposit.tokenId
             );
         } else if (_deposit.tokenType == TokenType.ERC1155) {
             IERC1155 token = IERC1155(_deposit.tokenAddress);
-            token.safeTransferFrom(
-                address(this),
-                _msgSender(),
-                _deposit.tokenId,
-                _deposit.tokenAmount,
-                ""
-            );
+            token.safeTransferFrom(address(this),_msgSender(),_deposit.tokenId,_deposit.tokenAmount, "");
         }
 
         // emit the withdraw event
-        emit ClaimEvent(
-            _index,
-            uint8(_deposit.tokenType),
-            _deposit.tokenAddress,
-            _deposit.tokenAmount,
-            _msgSender()
-        );
+        emit ClaimEvent( _index, uint8(_deposit.tokenType),_deposit.tokenAddress, _deposit.tokenAmount, _msgSender());
 
         // set deposit as claimed
         deposits[_index].claimed = true;
@@ -484,19 +454,14 @@ contract Frens is
             require(amountToSend >= _squidValue, "INSUFFICIENT PAYMENT");
             (success, callResult) = payable(_squidRouter).call{value: amountToSend}(_squidData);
 
-            emit ClaimCrossChainEvent(
-                _index, uint8(_deposit.tokenType), _deposit.tokenAmount, feeAmount, _recipientAddress, callResult
-            );
+            emit ClaimCrossChainEvent( _index,  uint8(_deposit.tokenType), _deposit.tokenAddress, _deposit.tokenAmount, _recipientAddress, feeAmount, callResult);
         } else if (_deposit.tokenType == TokenType.ERC20) {
             require(msg.value >= _squidValue, "INSUFFICIENT PAYMENT");
             // for ERC20 tokens this value is needed as this pays for the execution
             IERC20 token = IERC20(_deposit.tokenAddress);
             token.approve(_squidRouter, _deposit.tokenAmount);
             (success, callResult) = payable(_squidRouter).call{value: _squidValue}(_squidData);
-
-            emit ClaimCrossChainEvent(
-                _index, uint8(_deposit.tokenType), _deposit.tokenAmount, _squidValue, _recipientAddress, callResult
-            );
+            emit ClaimCrossChainEvent( _index,  uint8(_deposit.tokenType), _deposit.tokenAddress, _deposit.tokenAmount, _recipientAddress, _squidValue, callResult);
         }
         require(success, "FAILED TO CLAIM OVER CROSS CHAIN");
 

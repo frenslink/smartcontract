@@ -27,21 +27,27 @@
       },
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "_tokenAmount",
         "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_recipient",
+        "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint256",
         "name": "_fee",
         "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "_recipientAddress",
-        "type": "address"
       },
       {
         "indexed": false,
